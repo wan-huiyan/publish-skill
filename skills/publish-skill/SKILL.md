@@ -56,6 +56,34 @@ promo, £297K uplift, Jan 2026, UK retail" narrows to a handful of companies.
       Use orphan branch + force-push to remove: `git checkout --orphan clean && ...`
 - [ ] Add disclaimer: "All examples use synthetic data"
 - [ ] Check demo screenshots for visible field names that could identify a domain
+- [ ] Verify demo scenario is domain-distant (see below)
+
+**Choosing demo scenarios — domain distance matters:**
+
+Even after sanitizing names and amounts, a demo in the same DOMAIN as real client
+work raises questions internally. "SaaS customer churn" is generic to the public
+but not to a team that builds churn models for clients. Sanitizing the data isn't
+enough — you need to swap the entire domain.
+
+**Safe demo scenarios** (far from typical consultancy work):
+- NYC taxi trip duration prediction (public TLC dataset)
+- City speed limit impact on traffic accidents (public safety)
+- Weather station sensor anomaly detection
+- Movie rating prediction (MovieLens dataset)
+- Equipment failure prediction (manufacturing IoT)
+- Public transit ridership forecasting
+- Air quality index prediction
+
+**Avoid these** (too close to typical client work at agencies/consultancies):
+- Customer churn / retention (common client project)
+- E-commerce revenue / conversion (common client project)
+- Enrollment / admissions prediction (university clients)
+- Campaign ROI / marketing attribution (core agency work)
+- Retail demand forecasting (common client project)
+- Subscription/SaaS metrics (common client project)
+
+**Rule of thumb:** If your team has ever built something similar for a paying
+client, don't use that domain in your demo — even with synthetic data.
 
 **Why git history matters:** Even if you sanitize the current files, `git log -p`
 shows every previous version. Client names, amounts, and screenshots in old commits
