@@ -85,12 +85,16 @@ When you say "publish this skill", the skill walks through each phase:
 
 ### Claude Code
 
+**Option 1: Plugin install (recommended)**
 ```bash
-# Clone to your skills directory
-git clone https://github.com/wan-huiyan/publish-skill.git ~/.claude/skills/publish-skill
+/plugin marketplace add wan-huiyan/publish-skill
+/plugin install publish-skill@wan-huiyan-publish-skill
 ```
 
-Or manually copy `SKILL.md` to `~/.claude/skills/publish-skill/SKILL.md`.
+**Option 2: Git clone**
+```bash
+git clone https://github.com/wan-huiyan/publish-skill.git ~/.claude/skills/publish-skill
+```
 
 ### Cursor
 

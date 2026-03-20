@@ -1,0 +1,12 @@
+{
+  "name": "publish-skill",
+  "version": "1.0.0",
+  "description": "Publish Claude Code skills to GitHub and awesome-claude-skills lists with hard-won lessons encoded",
+  "author": {
+    "name": "wan-huiyan",
+    "url": "https://github.com/wan-huiyan"
+  },
+  "repository": "https://github.com/wan-huiyan/publish-skill",
+  "license": "MIT",
+  "keywords": ["publishing", "github", "skill-distribution", "awesome-list"]
+}

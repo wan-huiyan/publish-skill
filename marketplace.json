@@ -1,0 +1,17 @@
+{
+  "name": "wan-huiyan-publish-skill",
+  "owner": {
+    "name": "wan-huiyan"
+  },
+  "metadata": {
+    "description": "Publish Skill plugin marketplace"
+  },
+  "plugins": [
+    {
+      "name": "publish-skill",
+      "source": ".",
+      "description": "Publish Claude Code skills to GitHub and awesome-claude-skills lists",
+      "version": "1.0.0"
+    }
+  ]
+}
