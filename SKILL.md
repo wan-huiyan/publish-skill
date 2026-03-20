@@ -1,301 +1,310 @@
 ---
 name: publish-skill
 description: |
-  Publish a Claude Code skill to GitHub and optionally submit to awesome-claude-skills
-  lists. Use when: (1) user says "publish this skill", "put this on GitHub", or
-  "share this skill", (2) a skill is ready for public distribution, (3) user wants
-  to submit to awesome-claude-skills marketplaces. Covers the full workflow: repo
-  creation, README writing, LICENSE, GitHub topics, and awesome-list PR formatting.
-  Encodes hard-won lessons: no test-plan sections in doc PRs, never create multiple
-  PRs from the same fork to the same upstream, always update README before publishing,
-  interactive skills need process-flow examples not static dumps.
-author: wan-huiyan
-version: 1.0.0
-date: 2026-03-20
+  Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo. Use when
+  the user says "publish this skill", "put this on GitHub", "share this skill", or wants to
+  update an existing published skill repo. Covers: repo structure (.claude-plugin packaging,
+  skills/ directory, LICENSE), README generation with demo screenshots via puppeteer,
+  multi-agent review panel for README quality, research verification of thresholds/claims,
+  visual distinction of grounded vs heuristic thresholds, GitHub repo metadata (description,
+  topics), PR submission to awesome-claude-skills, and PDF output for HTML-generating skills.
+  Also use when updating an existing published skill repo (version bump, README improvement,
+  commit squashing).
 ---
 
 # Publish Skill to GitHub
 
-## Problem
-
-Publishing a Claude Code skill involves multiple steps with non-obvious pitfalls:
-creating the repo, writing a good README, choosing topics for discoverability,
-and optionally submitting to awesome-lists. Each step has gotchas learned from
-real publishing attempts.
-
-## Context / Trigger Conditions
-
-Use this skill when:
-- A skill exists locally at `~/.claude/skills/<name>/SKILL.md` and needs publishing
-- User says "publish this skill", "put this on GitHub", "share this skill"
-- User wants to submit to awesome-claude-skills lists
-- User wants to update an already-published skill's GitHub presence
-
-## Process
-
-### Phase 1: Pre-Flight Check
-
-Before publishing, verify the skill is ready:
-
-1. **Read the SKILL.md** — understand what the skill does
-2. **Check version** — is this v1.0.0 (new) or an update?
-3. **Check for interactive process** — does the skill have a phased process,
-   or is it a static reference doc? If static, warn the user:
-   > "This skill reads like a reference document. Skills that work best have
-   > an interactive process (diagnose → tailor → recommend). Want to add one
-   > before publishing?"
-4. **Check for sensitive content** — no internal URLs, credentials, or
-   company-specific references that shouldn't be public
-
-### Phase 2: Create GitHub Repository
-
-Ask: "Do you have a GitHub repo for this already, or should I create one?"
-
-#### If creating new:
-
-```bash
-# Create the repo
-gh repo create <skill-name> --public --description "<one-line description>"
-
-# Clone it
-cd /tmp && git clone https://github.com/<username>/<skill-name>.git
-cd <skill-name>
-
-# Copy the skill
-cp ~/.claude/skills/<skill-name>/SKILL.md .
-
-# Add LICENSE (MIT is standard for skills)
-# Create README.md (see Phase 3)
-# Add topics for discoverability
-gh repo edit --add-topic claude-code,claude-code-skill,ai,automation
-# Add domain-specific topics based on the skill content
-```
-
-#### If repo exists:
-
-```bash
-cd /tmp && git clone <repo-url>
-# Copy updated SKILL.md, update README, commit, push
-```
-
-### Phase 3: Write the README
-
-The README is the skill's landing page. It must answer three questions in 10 seconds:
-**What does it do? How does it work? How do I install it?**
-
-#### README Structure
-
-```markdown
-# <Skill Name> - Claude Code Skill
-
-<One paragraph: what it does and why it exists>
-
-## How It Works
-
-<If interactive skill: show the process flow>
-```
-Phase 0: Auto-Detect  → Scans project for relevant signals
-Phase 1: Understand    → Targeted questions
-Phase 2: Diagnose      → Maps situation to knowledge base
-Phase 3: Recommend     → Tailored action plan
-```
-
-<If static skill: show what it produces>
+Turn a local Claude Code skill into a polished, adoptable open-source GitHub repo.
 
 ## When to Use
 
-- <Bullet list of trigger conditions>
+- User says "publish this skill", "share this skill", "put this on GitHub"
+- User wants to update an already-published skill repo
+- User asks to submit a skill to awesome-claude-skills or a marketplace
 
-## What It Covers
+## Step 1: Locate the Skill
 
-<Key features/sections — keep scannable>
-
-## Example Output
-
-<CRITICAL: Show what the skill actually produces when invoked>
-
-<For interactive skills: show a realistic multi-phase conversation
-with collapsible sections (<details>). Show how outputs differ based
-on user context — this proves it's not a static doc dump.>
-
-<For static skills: show a representative output sample>
-
-## Key Insights
-
-> <2-3 quotable findings or principles the skill encodes>
-
-## Installation
-
-```bash
-git clone https://github.com/<user>/<skill>.git ~/.claude/skills/<skill>
+Find the SKILL.md to publish:
+```
+~/.claude/skills/{skill-name}/SKILL.md
 ```
 
-Or manually copy `SKILL.md` to `~/.claude/skills/<skill>/SKILL.md`.
+Read the frontmatter to extract: name, description, version, author.
 
-## Origin
+## Step 2: Create Repo Structure
 
-<How the skill was created — methodology, research foundations, etc.>
-
-<IMPORTANT: Add hyperlinks to all referenced papers, tools, and repos.
-Bare references without URLs look incomplete. Use this format:>
-
-| Paper | Venue | Contribution |
-|-------|-------|-------------|
-| [Name](url) | Venue Year | What it contributes |
-
-## License
-
-MIT
+```
+skill-name/
+├── .claude-plugin/
+│   └── plugin.json           # Plugin manifest (name, version, description)
+├── marketplace.json            # Marketplace index (at root, NOT inside .claude-plugin)
+├── skills/
+│   └── skill-name/
+│       └── SKILL.md          # Installable copy
+├── docs/                     # Screenshots (if visual output)
+│   ├── demo-{name}.html      # HTML source for screenshots
+│   └── demo-{name}.png       # Generated screenshot
+├── SKILL.md                  # Root copy (same content as skills/)
+├── README.md
+└── LICENSE                   # MIT
 ```
 
-#### README Pitfalls (learned from experience)
-
-- **No links in Origin section** — always add arxiv/DOI/GitHub URLs for
-  referenced papers and tools. Bare text references look incomplete.
-- **Static example output** — if the skill is interactive (v3.0+), the
-  Example Output must show the interactive flow, not a static taxonomy dump.
-  Use collapsible `<details>` blocks showing each phase with realistic
-  user responses.
-- **Missing "How It Works" process flow** — for interactive skills, show
-  the phase diagram upfront so users understand it's a diagnostic, not a doc.
-
-### Phase 4: Commit and Push
-
-```bash
-git add SKILL.md README.md LICENSE
-git commit -m "Initial release: <skill-name> v<version>
-
-<1-2 sentence description>
-
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
-
-git push origin <branch>
+**plugin.json template:**
+```json
+{
+  "name": "{skill-name}",
+  "description": "{from SKILL.md frontmatter}",
+  "version": "{version}",
+  "author": { "name": "{user's name}" },
+  "repository": "https://github.com/{username}/{skill-name}",
+  "license": "MIT",
+  "keywords": ["{domain-tags}"]
+}
 ```
 
-**After pushing, verify:**
-- README renders correctly on GitHub (tables, collapsible sections, links)
-- Topics appear on the repo page
-- SKILL.md is accessible
+**marketplace.json template** (place at repo ROOT, not inside .claude-plugin):
+```json
+{
+  "name": "{username}-{skill-name}",
+  "owner": { "name": "{user's name}" },
+  "plugins": [{
+    "name": "{skill-name}",
+    "source": ".",
+    "description": "{one-line}",
+    "version": "{version}"
+  }]
+}
+```
 
-### Phase 5: Submit to Awesome Lists (Optional)
+**CRITICAL:** marketplace.json `name` becomes the marketplace identifier. Users will
+run `/plugin install {skill-name}@{marketplace-name}`, so use a descriptive name like
+`wan-huiyan-ai-trust-evaluation`.
 
-Only proceed if the user explicitly asks to submit to awesome-claude-skills.
+## Step 3: Write the README
 
-There are two main lists:
-1. **ComposioHQ/awesome-claude-skills** — larger, more established
-2. **travisvn/awesome-claude-code** — newer, growing
+Follow this structure (order matters for first-time visitor conversion):
 
-#### Critical Rules for Awesome-List PRs
+1. **Title + one-line descriptor** — what it IS, factual. Not a scenario.
+2. **Screenshot** (if visual output) — above the fold. This is the #1 adoption driver.
+3. **Quick Start** — conversation example showing usage flow
+4. **Installation** — Claude Code + Cursor:
 
-These rules were learned from real incidents:
-
-1. **NO "Test plan" section in PR body** — these are documentation PRs, not
-   code PRs. A test plan checklist is inappropriate and looks automated.
-   Use this PR format instead:
-
+   **Claude Code:**
    ```bash
-   gh pr create --title "Add <skill-name> skill" --body "$(cat <<'EOF'
-   ## Summary
-   - Adds [<skill-name>](repo-url) to the list
-   - <One sentence: what the skill does>
-   - <One sentence: why it's valuable / what gap it fills>
+   # Plugin install (recommended — requires plugin packaging)
+   /plugin marketplace add {username}/{skill-name}
+   /plugin install {skill-name}@{username}-{skill-name}
 
-   🤖 Generated with [Claude Code](https://claude.com/claude-code)
-   EOF
-   )"
+   # Git clone (always works)
+   git clone https://github.com/{username}/{skill-name}.git ~/.claude/skills/{skill-name}
    ```
 
-2. **NEVER create multiple PRs from the same fork to the same upstream repo**
-   — if you fork `upstream/awesome-claude-skills` to `user/awesome-claude-skills`
-   and create PR #1 from branch A, then create PR #2 from branch B, pushing
-   branch B will force-push and CLOSE PR #1 automatically. This is because
-   GitHub forks share a single default branch for PRs.
-
-   **Fix:** If submitting multiple skills to the same list, combine them into
-   ONE PR with ONE commit. Or use separate branches with explicit `--head` flags.
-
-3. **If a PR gets auto-closed**, it leaves a permanent "Quickdraw" badge on
-   your GitHub profile (closed within 5 minutes of opening). GitHub PRs cannot
-   be deleted — only repo admins can, and even then rarely. Add a "Superseded
-   by #<new-PR>" comment to any orphaned PRs.
-
-4. **Check the list's format** before submitting. Each awesome-list has its
-   own table/list format. Match it exactly:
-
+   **Cursor** (Cursor 2.4+, global discovery can be flaky):
    ```bash
-   # Read the existing format
-   gh api repos/<org>/awesome-claude-skills/contents/README.md \
-     --jq '.content' | base64 -d | tail -20
+   # Per-project rule (most reliable)
+   mkdir -p .cursor/rules
+   # Create .cursor/rules/{skill-name}.mdc with SKILL.md content + alwaysApply: true
+
+   # npx skills CLI
+   npx skills add {username}/{skill-name} --global
+
+   # Manual global install
+   git clone https://github.com/{username}/{skill-name}.git ~/.cursor/skills/{skill-name}
    ```
 
-5. **Add the entry alphabetically** within the appropriate category.
+   **IMPORTANT:** `claude install-skill` is NOT a real command. Never use it in READMEs.
+5. **What You Get** — concrete, tangible outputs
+6. **Comparison table** — "Typical Ad-Hoc vs With Skill" (realistic baseline, not strawman)
+7. **How It Works** — step table
+8. **Key Design Decisions** — the non-obvious architectural choices
+9. **Limitations** — what it does NOT do. Builds trust with technical audiences.
+10. **Dependencies** — required vs optional. Explain what happens *without* each.
+11. **Quality Checklist** in `<details>` — what the skill guarantees
+12. **Related Skills** — cross-link companion skills with hyperlinks
+13. **Research/References** in `<details>` — citations with hyperlinks, if applicable
+14. **Version History** — even 3 lines. Trust signal that it's maintained.
+15. **License** — MIT
 
-#### Submission Workflow
+### README Anti-Patterns (from review panels)
+
+- No screenshot for a visual-output skill — "disqualifying" per Devil's Advocate
+- Domain-specific examples that confuse general audiences (use SaaS churn, e-commerce)
+- Thresholds presented as universal truths without provenance
+- "Without" column that strawmans incompetence ("you'd just eyeball it")
+- Missing limitations section — every serious tool documents what it can't do
+- Installation buried below 5 sections of detail
+- "Refuses to proceed" language — sounds adversarial. Use "asks" instead.
+- Removed Quality Checklist — it was the only place answering "what does this guarantee?"
+- No Version History — signals abandoned/untested tool
+
+### Decision Criteria Tables with Provenance
+
+If the skill uses numeric thresholds, visually distinguish grounded vs heuristic:
+
+```markdown
+Thresholds in **bold** are grounded in published sources.
+Thresholds in *italic* are practitioner heuristics — adjust for your domain.
+
+| Criterion | Threshold | Source |
+|-----------|-----------|--------|
+| Gain ratio | **Rank-based** | [Quinlan (1993)](link) |
+| Coverage gaps | *>20%* | Heuristic |
+```
+
+## Step 4: Generate Demo Screenshots
+
+For skills that produce visual output (HTML slides, diagnostics, reports):
+
+1. Create demo HTML at `docs/demo-{name}.html` using a **generic use case**
+   (SaaS churn, e-commerce conversion — NOT university enrollment, specific client names)
+2. Install puppeteer and screenshot:
+```bash
+cd /tmp/{repo} && npm install puppeteer
+```
+```javascript
+const puppeteer = require('puppeteer');
+const browser = await puppeteer.launch({ headless: 'new' });
+const page = await browser.newPage();
+await page.setViewport({ width: 900, height: 1200, deviceScaleFactor: 2 });
+await page.goto(`file://${htmlPath}`, { waitUntil: 'networkidle0' });
+await new Promise(r => setTimeout(r, 2000)); // wait for fonts
+
+const element = await page.$('.panel'); // or '.slide', '.section'
+const box = await element.boundingBox();
+await page.screenshot({
+  path: 'docs/demo-screenshot.png',
+  clip: { x: box.x - 20, y: box.y - 10, width: box.width + 40, height: box.height + 20 },
+});
+```
+3. Clean up `node_modules/`, `package.json`, `package-lock.json` before committing
+
+## Step 5: Verify Claims and Thresholds
+
+If the skill uses numeric thresholds or cites academic papers, run parallel
+research agents to verify each claim:
+
+```
+Launch 1 agent per threshold/claim in parallel. Each agent searches for:
+- Does the cited paper actually specify this threshold?
+- Is this a ranking metric used with a fixed cutoff (likely wrong)?
+- What do popular implementations use as defaults?
+```
+
+**Common findings (from verifying ML thresholds across 5 skills):**
+
+| Threshold | Verdict | What to do instead |
+|-----------|---------|-------------------|
+| Gain ratio >0.3 | **Invented.** Quinlan uses ranking only. | Rank-based: above-average info gain filter |
+| AUC >0.005 | **Invented.** No paper defines this. | DeLong test p<0.05 (DeLong 1988) |
+| Conditional MI >50% | **Invented.** Brown et al. uses ranking. | Rank-based: JMI/CMIM scoring |
+| PSI <0.10/0.25 | **Industry convention.** Siddiqi 2006. | Keep but note sample-size dependent (Yurdakul 2018) |
+| Population >200 | **Misattributed.** Van der Ploeg = 200 EPV. | 20-300 range (LightGBM docs) |
+
+**Rule:** Label honestly. Bold for published, italic for heuristic.
+
+## Step 6: Review Panel for README (Recommended)
+
+Run `/agent-review-panel` on the README before publishing:
+
+```
+Review the README at {path}. Evaluate whether it would attract a first-time
+visitor to install this Claude Code skill. Use 3 reviewers
+(Clarity Editor, Completeness Checker, Devil's Advocate).
+```
+
+Common panel findings across 5 repo reviews:
+- Missing demo screenshot (#1 issue for visual tools)
+- Threshold inconsistency between README and SKILL.md
+- Overclaiming in comparison tables
+- Missing limitations section
+- Quality Checklist removed (it was the quality contract)
+- Opening hook excludes non-target audiences
+
+## Step 7: Create GitHub Repo and Push
 
 ```bash
-# Fork the awesome-list repo
-gh repo fork <org>/awesome-claude-skills --clone
+gh repo create {username}/{skill-name} --public \
+  --description "{one-line}" --source . --push
+```
 
-# Create a branch
+Set default branch to `main` if created as `master`:
+```bash
+gh api repos/{username}/{skill-name} -X PATCH -f default_branch=main
+git branch -m master main && git push origin main
+git push origin --delete master
+```
+
+Set topics:
+```bash
+gh api repos/{username}/{skill-name}/topics -X PUT --input - <<'EOF'
+{"names":["claude-code","claude-code-skill","{domain-1}","{domain-2}"]}
+EOF
+```
+
+## Step 8: Submit to awesome-claude-skills (Optional)
+
+```bash
+# Clone your fork (or create one)
+gh repo fork ComposioHQ/awesome-claude-skills --clone
 cd awesome-claude-skills
-git checkout -b add-<skill-name>
+git checkout -b add-{skill-name}
 
-# Edit README.md — add your skill entry in the correct format/position
-# Match the existing table/list format exactly
+# Add entry to appropriate section in README.md
+# Format:
+# - [Skill Name](url) - One-line description. *By [@username](profile)*
 
-# Commit
-git add README.md
-git commit -m "Add <skill-name> skill"
+git add README.md && git commit -m "Add {skill-name} skill"
+gh pr create --title "Add {skill-name} skill" --body "..."
+```
 
-# Push and create PR
-git push -u origin add-<skill-name>
-gh pr create --repo <org>/awesome-claude-skills \
-  --title "Add <skill-name> skill" \
-  --body "$(cat <<'EOF'
-## Summary
-- Adds [<skill-name>](repo-url) to the list
-- <description>
+**Important:** Never create multiple PRs from the same fork to the same upstream.
+Update existing PRs with `git commit --amend && git push --force-with-lease`.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+## Step 9: Sync Local Skill
+
+After publishing, ensure the local installation matches:
+```bash
+cp {repo}/skills/{skill-name}/SKILL.md ~/.claude/skills/{skill-name}/SKILL.md
+```
+
+## PDF Output for HTML-Generating Skills
+
+If the skill generates HTML (slides, reports, diagnostics), add PDF as an output.
+Key CSS rules for clean page breaks:
+
+```css
+@media print {
+  .section, .card, .callout { break-inside: avoid; }
+  p { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+  .section-header + .section-desc { break-before: avoid; }
+  .page-break-before { break-before: page; }
+}
+```
+
+- `flex-wrap: nowrap` on flow diagrams prevents node wrapping to second row
+- `break-inside: avoid` on paragraphs prevents text splitting mid-sentence
+- Explicit page breaks between major sections via `.page-break-before` class
+
+## Updating an Existing Published Skill
+
+1. Update SKILL.md (both root and `skills/` copy)
+2. Bump version in `plugin.json` and `marketplace.json`
+3. Update README if user-facing behavior changed
+4. For clean history: `git reset --soft HEAD~N && git commit` then `git push --force-with-lease`
+5. Sync local: `cp skills/{name}/SKILL.md ~/.claude/skills/{name}/SKILL.md`
+
+## Commit Message Convention
+
+```bash
+git commit -m "$(cat <<'EOF'
+{type}: {description}
+
+{body explaining what and why}
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
 EOF
 )"
 ```
 
-**If submitting to both lists:** Do them sequentially. Each is a separate
-fork → branch → PR. Do NOT try to reuse branches or forks across different
-upstream repos.
-
-### Phase 6: Post-Publish Verification
-
-After publishing:
-1. **Visit the repo URL** — verify README renders, links work
-2. **Test install** — `git clone <url> ~/.claude/skills/<name>` works
-3. **Check PRs** — if submitted to awesome-lists, verify PRs are open and
-   correctly formatted
-4. **Update local skill** — if the GitHub version diverged during README
-   writing, sync back: `cp /tmp/<repo>/SKILL.md ~/.claude/skills/<name>/`
-
-## Verification Checklist
-
-- [ ] SKILL.md is in the repo root
-- [ ] README has: description, how it works, when to use, example output,
-      installation, origin with links, license
-- [ ] LICENSE file exists (MIT recommended)
-- [ ] GitHub topics include `claude-code` and `claude-code-skill`
-- [ ] All paper/tool references in Origin have hyperlinks
-- [ ] Example output shows interactive flow (if applicable), not static dump
-- [ ] No sensitive content (internal URLs, credentials, company names)
-- [ ] Awesome-list PR has no "Test plan" section
-- [ ] Only one PR per fork to the same upstream
-
-## Notes
-
-- This skill was extracted from publishing `ai-trust-evaluation` (3 versions)
-  and `agent-review-panel` (5 versions) to GitHub, plus submitting both to
-  two awesome-claude-skills lists
-- The multi-PR-from-same-fork issue caused an auto-closed PR and an
-  irremovable "Quickdraw" GitHub badge — a permanent reminder
-- README quality directly impacts adoption — the Example Output section is
-  the most important part for convincing users to install
-- See also: `skill-creator` (for creating skills), `claudeception` (for
-  extracting skills from sessions)
+Types: `feat:` (new feature), `docs:` (README/docs), `fix:` (bug fix), `chore:` (packaging)
