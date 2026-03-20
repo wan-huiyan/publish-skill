@@ -83,11 +83,35 @@ When you say "publish this skill", the skill walks through each phase:
 
 ## Installation
 
+### Claude Code
+
 ```bash
+# Clone to your skills directory
 git clone https://github.com/wan-huiyan/publish-skill.git ~/.claude/skills/publish-skill
 ```
 
 Or manually copy `SKILL.md` to `~/.claude/skills/publish-skill/SKILL.md`.
+
+### Cursor
+
+Cursor supports skills via `~/.cursor/skills/` (Cursor 2.4+), though global discovery can be flaky. Options from most to least reliable:
+
+**Option 1: Per-project rule (most reliable)**
+```bash
+mkdir -p .cursor/rules
+# Create .cursor/rules/publish-skill.mdc with the content of SKILL.md
+# Add frontmatter: alwaysApply: true
+```
+
+**Option 2: npx skills CLI**
+```bash
+npx skills add wan-huiyan/publish-skill --global
+```
+
+**Option 3: Manual global install**
+```bash
+git clone https://github.com/wan-huiyan/publish-skill.git ~/.cursor/skills/publish-skill
+```
 
 ## Related Skills
 
