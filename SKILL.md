@@ -74,16 +74,22 @@ enough — you need to swap the entire domain.
 - Public transit ridership forecasting
 - Air quality index prediction
 
-**Avoid these** (too close to typical client work at agencies/consultancies):
-- Customer churn / retention (common client project)
-- E-commerce revenue / conversion (common client project)
-- Enrollment / admissions prediction (university clients)
-- Campaign ROI / marketing attribution (core agency work)
-- Retail demand forecasting (common client project)
-- Subscription/SaaS metrics (common client project)
+**Generally safe** (common enough to be generic):
+- E-commerce revenue / conversion / churn
+- Campaign ROI / marketing attribution
+- Retail demand forecasting
+- SaaS subscription metrics
 
-**Rule of thumb:** If your team has ever built something similar for a paying
-client, don't use that domain in your demo — even with synthetic data.
+**Avoid these** (identifiable when combined with specific field names/amounts):
+- Enrollment / admissions prediction (ties to specific institution clients)
+- Any scenario using real client field names, even with synthetic data
+- Niche industry verticals where your team has few clients (easy to narrow down)
+
+**Rule of thumb:** Common domains (e-commerce, churn, retail) are fine for demos
+because they're universal. The risk is when you combine a niche domain with
+specific field names, amounts, or dates that could narrow to a particular client.
+Enrollment prediction with `merit_award_scholarship_tier` identifies one client;
+"e-commerce churn" with `days_since_last_purchase` identifies nobody.
 
 **Why git history matters:** Even if you sanitize the current files, `git log -p`
 shows every previous version. Client names, amounts, and screenshots in old commits
