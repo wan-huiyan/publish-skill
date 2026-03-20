@@ -22,6 +22,46 @@ Turn a local Claude Code skill into a polished, adoptable open-source GitHub rep
 - User wants to update an already-published skill repo
 - User asks to submit a skill to awesome-claude-skills or a marketplace
 
+## Step 0: Client Data Audit (CRITICAL — do this FIRST)
+
+Before publishing ANYTHING, scan for client-identifying data. Skills built from
+real engagements often contain details that can identify clients:
+
+**What to scan for:**
+```
+Grep: company names, brand names, institution names
+Grep: specific dollar/pound amounts from real engagements
+Grep: real people's names, employer emails
+Grep: internal URLs, project codes, Jira tickets
+Grep: field names from client databases (e.g., merit_award_scholarship_tier)
+```
+
+**Combination risk:** Even individually innocuous details (a campaign type +
+currency + dates + industry) can identify a client when combined. "Free delivery
+promo, £297K uplift, Jan 2026, UK retail" narrows to a handful of companies.
+
+**Check ALL of these:**
+- SKILL.md (methodology sections often reference real cases)
+- README.md (quick start examples, origin sections)
+- Demo screenshots/HTML (field names, amounts, dates visible in images)
+- marketplace.json (author email — don't use employer email)
+- Supporting files (references/, docs/, examples/)
+
+**Sanitization checklist:**
+- [ ] Replace client/institution names with generic labels ("a retail client", "a university")
+- [ ] Change specific amounts to synthetic numbers AND switch currency
+- [ ] Replace employer email with personal email or remove
+- [ ] Regenerate screenshots from sanitized HTML source
+- [ ] Clean git history — old data lives in previous commits even after editing!
+      Use orphan branch + force-push to remove: `git checkout --orphan clean && ...`
+- [ ] Add disclaimer: "All examples use synthetic data"
+- [ ] Check demo screenshots for visible field names that could identify a domain
+
+**Why git history matters:** Even if you sanitize the current files, `git log -p`
+shows every previous version. Client names, amounts, and screenshots in old commits
+are still accessible. For sensitive data removal, create an orphan branch with only
+the clean version and force-push.
+
 ## Step 1: Locate the Skill
 
 Find the SKILL.md to publish:
