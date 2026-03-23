@@ -317,19 +317,93 @@ EOF
 
 ## Step 8: Submit to awesome-claude-skills (Optional)
 
+### 8a: Choose the Right Category
+
+The repo uses these categories (from CONTRIBUTING.md):
+- **Business & Marketing** — lead generation, competitive research, branding
+- **Communication & Writing** — content creation, conversation analysis
+- **Creative & Media** — images, video, audio, creative content
+- **Development & Code Tools** — software dev, documentation, technical workflows
+- **Data & Analysis** — data processing, ML, research, databases
+- **Productivity & Organization** — file management, task management
+
+Add your entry **in alphabetical order** within the chosen category.
+
+### 8b: Write the Awesome-List Entry
+
+**Format (strict):**
+```markdown
+- [Skill Name](https://github.com/{username}/{skill-name}) - One-sentence description. *By [@username](https://github.com/{username})*
+```
+
+**Format rules:**
+- No emojis
+- Consistent punctuation (period at end of description)
+- Alphabetical order within category
+
+**Description length: aim for ~130 characters** (the norm across the repo). Descriptions
+over ~150 chars will likely be flagged by reviewers.
+
+**What to INCLUDE in the description:**
+- What the skill does for the user (the core value proposition)
+- The distinctive approach if it's not obvious from the name
+
+**What to DROP from the description** (move to your repo's README instead):
+- Paper/research references (e.g., "Based on ChatEval, AutoGen, DebateLLM")
+- Specific counts/lists (e.g., "17-strategy taxonomy, 39-issue registry")
+- Implementation details (e.g., "entropy/gain ratio, conditional MI, incremental CV AUC")
+- Step counts only if they don't add clarity (e.g., "10-step diagnostic" IS useful, "covers Q1-Q8" is NOT)
+
+**Examples of good vs bad descriptions:**
+
+| Too long (flagged by reviewer) | Shortened (approved) |
+|-------------------------------|---------------------|
+| "Multi-agent adversarial review panel where Claude Code subagents with different perspectives review work, debate, reach consensus, then a supreme judge renders the final verdict. Based on ChatEval, AutoGen, MachineSoM, and DebateLLM research." | "Multi-agent adversarial review panel where Claude Code subagents debate from different perspectives before a supreme judge renders the final verdict." |
+| "Assess whether an ML training window can be extended by adding a new data source. Covers per-output label validity, drift-aware validation (PSI), purged temporal CV with embargo, XGBoost NaN handling for missing feature blocks, and companion model vs extended training architecture decisions." | "Evaluate ML training window extensions with per-output label validity, drift checks, and architecture recommendations." |
+
+### 8c: Create the PR
+
 ```bash
 # Clone your fork (or create one)
 gh repo fork ComposioHQ/awesome-claude-skills --clone
 cd awesome-claude-skills
 git checkout -b add-{skill-name}
 
-# Add entry to appropriate section in README.md
-# Format:
-# - [Skill Name](url) - One-line description. *By [@username](profile)*
-
+# Add entry to README.md in the appropriate category, alphabetical order
 git add README.md && git commit -m "Add {skill-name} skill"
-gh pr create --title "Add {skill-name} skill" --body "..."
 ```
+
+**PR title:** "Add {skill-name} skill" (or "Add {skill-1} and {skill-2} skills" for multiple)
+
+**PR description** (from CONTRIBUTING.md — reviewers expect these):
+```bash
+gh pr create --title "Add {skill-name} skill" --body "$(cat <<'EOF'
+## What problem it solves
+{One paragraph on the real-world use case}
+
+## Who uses this workflow
+{Target audience — ML engineers, data scientists, etc.}
+
+## Example usage
+{Brief conversation example or trigger phrase}
+
+## Links
+- Repo: https://github.com/{username}/{skill-name}
+- License: MIT
+EOF
+)"
+```
+
+### 8d: Responding to Reviews
+
+Reviewers commonly flag:
+- **Description too long** — shorten to ~130 chars, drop implementation details
+- **Wrong category** — check the categories above
+- **Not alphabetical** — re-sort within the category
+- **Missing attribution** — add `*By [@username](profile)*` suffix
+
+When amending per review feedback, use `git commit --amend` + `git push --force-with-lease`
+to keep the PR clean (single commit).
 
 **Important:** Never create multiple PRs from the same fork to the same upstream.
 Update existing PRs with `git commit --amend && git push --force-with-lease`.
