@@ -408,6 +408,30 @@ to keep the PR clean (single commit).
 **Important:** Never create multiple PRs from the same fork to the same upstream.
 Update existing PRs with `git commit --amend && git push --force-with-lease`.
 
+### 8e: Editing a PR on Someone Else's Repo
+
+When you need to update a PR that targets an upstream repo (yours or someone else's), the
+PR may come from any fork. Don't guess — look it up:
+
+```bash
+# Step 1: Find which fork and branch the PR comes from
+gh api repos/{owner}/{repo}/pulls/{num} --jq '.head.repo.full_name, .head.ref'
+# Output: wan-huiyan/field-notes
+#         fix/installation-guide
+
+# Step 2: Clone THAT FORK (not the upstream repo)
+git clone https://github.com/{fork-full-name}.git /tmp/{repo}
+
+# Step 3: Checkout THAT BRANCH
+cd /tmp/{repo} && git checkout {branch}
+
+# Step 4: Make changes, commit, push to THAT FORK
+git add . && git commit -m "..." && git push origin {branch}
+```
+
+**Common mistake:** Cloning the upstream repo and fetching `pull/{num}/head` gives you a
+detached ref you can't push back to. Always clone the fork directly.
+
 ## Step 9: Sync Local Skill
 
 After publishing, ensure the local installation matches:
