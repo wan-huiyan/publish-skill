@@ -210,6 +210,40 @@ Follow this structure (order matters for first-time visitor conversion):
 - "Refuses to proceed" language — sounds adversarial. Use "asks" instead.
 - Removed Quality Checklist — it was the only place answering "what does this guarantee?"
 - No Version History — signals abandoned/untested tool
+- **Pitfalls section too narrow/implementation-focused** — leading with XGBoost `.fillna(0)` tips when the skill's real value is "safe training window extension" makes it look like a niche tool. Visitors scan pitfalls to decide "is this for me?" — implementation details don't answer that question.
+
+### Pitfalls / "What This Catches" Section
+
+If the skill addresses pitfalls or common mistakes, structure them in two tiers:
+
+**Tier 1: Strategic pitfalls** (lead with these — they're the selling points):
+- Problems that cost teams *weeks* (wrong assumptions, missed opportunities, silent degradation)
+- Model-agnostic or broadly applicable — don't narrow the audience prematurely
+- Written as "you think X, but actually Y" — the reader should feel the pain
+
+**Tier 2: Implementation pitfalls** (follow with these — they show thoroughness):
+- Specific code-level traps (`.fillna(0)`, sentinel values, off-by-one errors)
+- Framework-specific details (XGBoost NaN routing, sklearn CV leakage)
+- These impress *after* the reader is already sold, but repel if they lead
+
+**Why this order matters:** Strategic pitfalls answer "do I need this tool?" Implementation pitfalls answer "is this tool thorough?" Leading with Tier 2 makes the skill look like a tips-and-tricks collection for one framework, when the real value is the structured diagnostic.
+
+**Apply the same principle to ALL list/table sections**, not just pitfalls:
+- **"What worked" tables** — lead with broadly applicable techniques (covariate safety audit, pre-period selection), then domain-specific methods (RDiT, conformal CIs)
+- **"Key Lessons" lists** — strategic lessons first ("subtract before you add", "two methods > one"), tactical lessons second ("nseasons=7 makes DoW redundant")
+- **"What You Get" bullets** — high-level outcomes first (go/no-go verdict, client-ready deliverable), diagnostic details second
+
+**When the README already has strong narrative sections** (e.g., a "Journey" story showing real problem-solving), don't restructure those — they're effective as-is. Instead, *add* a "What This Catches" section as a scannable entry point that a first-time visitor can skim in 10 seconds. The narrative convinces people who are already interested; the scannable list catches people who are still deciding.
+
+### Narrative Sections ("Journey", "Case Study", "How We Got Here")
+
+Narrative sections that show real problem-solving (e.g., "p=0.223 → p=0.039 through systematic improvements") are powerful selling devices — they prove the skill was battle-tested, not theoretical. But they can read as narrow anecdotes if framed wrong.
+
+**Frame as methodology, not anecdote.** The intro should make clear the story illustrates the skill's *systematic process*, not one lucky outcome:
+- **Bad:** "Starting from the same 4 days of campaign data, systematic improvements achieved significance"
+- **Good:** "Every causal analysis follows the same pattern: a promising-but-not-significant first result, then systematic improvements that either find the real signal or confirm there isn't one. Here's what that looks like:"
+
+The difference: "bad" says "here's what happened once." "Good" says "this is what the skill does every time, illustrated by one run." The reader infers their analysis would follow the same disciplined process.
 
 ### Decision Criteria Tables with Provenance
 
