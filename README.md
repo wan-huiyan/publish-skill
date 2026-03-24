@@ -5,20 +5,29 @@ A Claude Code skill that handles the full workflow of publishing other skills to
 ## How It Works
 
 ```
-Phase 1: Pre-Flight Check    → Verify skill is ready, check for sensitive content,
-                                warn if it's a static doc (not interactive)
+Step 0: Client Data Audit     → Scan for company names, amounts, field names in
+                                SKILL.md, README, screenshots, git history
 
-Phase 2: Create GitHub Repo   → gh repo create, copy SKILL.md, add LICENSE, set topics
+Step 1: Repo Structure         → .claude-plugin packaging, skills/ directory, LICENSE
+                                (MIT — with independent rationale, not self-referential)
 
-Phase 3: Write README          → Structured template with links, example output,
-                                interactive process flow (not static dumps)
+Step 2: Write README           → 16-section template: screenshots, installation, limitations,
+                                version history. Pitfalls in strategic-then-implementation order
 
-Phase 4: Commit & Push         → Standard git workflow with verification
+Step 3: Hook Bundling          → If the skill benefits from auto-triggering, include
+                                hooks/ directory with ready-to-use scripts + settings.json snippet
 
-Phase 5: Awesome Lists         → (Optional) Submit PRs to ComposioHQ and/or travisvn
-                                lists with correct formatting
+Step 4: Demo Screenshots       → Puppeteer-generated. For rich output, capture 2–4 focused
+                                sections (not one massive hero image)
 
-Phase 6: Post-Publish Verify   → Check renders, test install, verify PRs
+Step 5: Verify Claims          → Parallel research agents check thresholds and citations
+
+Step 6: Review Panel           → Multi-agent adversarial review of the README
+
+Step 7: GitHub Setup           → Create repo, set topics (or suggest in PR if contributing
+                                via fork — API requires owner access)
+
+Step 8: Awesome Lists          → (Optional) Submit PRs with correct formatting per list
 ```
 
 ## When to Use
@@ -35,12 +44,14 @@ These rules were learned from real incidents during publishing:
 | Lesson | What Happened |
 |--------|--------------|
 | No "Test plan" in PR body | 3 of 4 awesome-list PRs had unnecessary test plan sections — inappropriate for doc-only PRs |
-| Never multi-PR from same fork | Two PRs to the same upstream from one fork — second push auto-closed the first, leaving an irremovable "Quickdraw" badge |
+| Never multi-PR from same fork | Two PRs to the same upstream from one fork — second push auto-closed the first |
 | Always add links in Origin | Bare paper references without URLs look incomplete — always add arxiv/DOI/GitHub links |
 | Interactive skills need process examples | Example Output showing a static taxonomy dump contradicts the claim that the skill is an "interactive diagnostic" |
 | Check list format before submitting | Each awesome-list has its own table/list format — match it exactly |
-| Combine related submissions | Multiple skills going to the same list → one PR, one commit |
-| GitHub can't delete PRs | Only repo admins can delete PRs, and even then rarely — be careful with what you open |
+| GitHub can't delete PRs | Only repo admins can delete PRs — be careful with what you open |
+| Fork contributors can't set topics | `gh repo edit --add-topic` requires admin access — suggest topics in PR description instead |
+| Multi-section screenshots beat single hero | For rich output skills, 2–4 focused section screenshots show variety better than one long image |
+| Don't cite your own skill as authority | "MIT because publish-skill says so" is circular — justify recommendations with independent reasoning |
 
 ## Example: What the Skill Produces
 
@@ -130,6 +141,15 @@ Extracted via [Claudeception](https://github.com/wan-huiyan/ai-trust-evaluation)
 - Publishing [agent-review-panel](https://github.com/wan-huiyan/agent-review-panel) through v2.0 → v2.5
 - Submitting both to [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) and [travisvn/awesome-claude-code](https://github.com/travisvn/awesome-claude-code)
 - Debugging auto-closed PRs, fixing formatting, and learning the hard way about GitHub fork behavior
+
+## Version History
+
+| Version | Date | Changes |
+|---|---|---|
+| 1.3.0 | 2026-03-24 | Add hooks bundling, multi-section screenshots, fork guidance, Why MIT rationale, pitfalls restructuring |
+| 1.2.0 | 2026-03-23 | Add awesome-claude-skills submission guidelines, domain-distance guidance |
+| 1.1.0 | 2026-03-22 | Add Step 0 client data audit, PR editing workflow |
+| 1.0.0 | 2026-03-21 | Initial release |
 
 ## License
 
