@@ -1,0 +1,177 @@
+{
+  "skill": "publish-skill",
+  "version": "1.0.0",
+  "triggers": [
+    {"prompt": "publish this skill to GitHub", "should_trigger": true},
+    {"prompt": "put this skill on GitHub as a public repo", "should_trigger": true},
+    {"prompt": "share this skill as an open source repo", "should_trigger": true},
+    {"prompt": "submit this skill to awesome-claude-skills", "should_trigger": true},
+    {"prompt": "update my published skill repo on GitHub with the latest SKILL.md changes", "should_trigger": true},
+    {"prompt": "I want to release this skill publicly", "should_trigger": true},
+    {"prompt": "create a GitHub repo for my skill", "should_trigger": true},
+    {"prompt": "package this skill for the marketplace", "should_trigger": true},
+    {"prompt": "make this skill installable for other users", "should_trigger": true},
+    {"prompt": "push my skill to a public repo with a README", "should_trigger": true},
+    {"prompt": "generate a README and publish my skill", "should_trigger": true},
+    {"prompt": "bump the version and republish my skill", "should_trigger": true},
+    {"prompt": "I need to open source my Claude Code skill", "should_trigger": true},
+    {"prompt": "help me publish this to the skill marketplace", "should_trigger": true},
+    {"prompt": "turn my local skill into a polished GitHub repo", "should_trigger": true},
+
+    {"prompt": "create a new skill from scratch for linting", "should_trigger": false},
+    {"prompt": "check this code for memory leaks", "should_trigger": false},
+    {"prompt": "set up a Kubernetes cluster for my API", "should_trigger": false},
+    {"prompt": "write a README for my Python library", "should_trigger": false},
+    {"prompt": "make my trigger phrases more accurate", "should_trigger": false},
+    {"prompt": "set up CI/CD for my Node.js project", "should_trigger": false},
+    {"prompt": "help me write unit tests for my API", "should_trigger": false},
+    {"prompt": "refactor this function to be more efficient", "should_trigger": false},
+    {"prompt": "analyze this CSV dataset for trends", "should_trigger": false},
+    {"prompt": "build a REST API with Express", "should_trigger": false},
+    {"prompt": "fix the security vulnerability in my code", "should_trigger": false},
+    {"prompt": "design a database schema for users and orders", "should_trigger": false},
+
+    {"prompt": "upload this package to the npm registry", "should_trigger": false},
+    {"prompt": "post this code as a gist for my coworker", "should_trigger": false},
+    {"prompt": "publish this skill repo and update the version number", "should_trigger": true},
+    {"prompt": "I finished my skill, now what?", "should_trigger": true},
+    {"prompt": "how do I let others install my skill?", "should_trigger": true},
+    {"prompt": "squash commits and update the published skill repo on GitHub", "should_trigger": true},
+    {"prompt": "add my skill to the awesome list", "should_trigger": true},
+    {"prompt": "publish my skill to GitHub but skip the awesome-claude-skills submission", "should_trigger": true},
+    {"prompt": "create a plugin.json and marketplace.json for my skill", "should_trigger": true}
+  ],
+  "test_cases": [
+    {
+      "name": "basic_publish_flow",
+      "prompt": "Publish my schliff skill to GitHub",
+      "assertions": [
+        {"type": "contains", "value": "SKILL.md", "description": "References the source SKILL.md file"},
+        {"type": "contains", "value": "README", "description": "Generates a README for the repo"},
+        {"type": "contains", "value": "LICENSE", "description": "Includes a license file"},
+        {"type": "excludes", "value": "install-skill", "description": "Does not use the fake install-skill command"}
+      ]
+    },
+    {
+      "name": "repo_structure_validation",
+      "prompt": "Create a GitHub repo structure for publishing my skill",
+      "assertions": [
+        {"type": "contains", "value": "plugin.json", "description": "Creates plugin manifest"},
+        {"type": "contains", "value": "marketplace.json", "description": "Creates marketplace index"},
+        {"type": "contains", "value": "skills/", "description": "Includes installable skills/ directory"},
+        {"type": "pattern", "value": "\\.claude-plugin", "description": "Includes .claude-plugin directory"}
+      ]
+    },
+    {
+      "name": "awesome_list_submission",
+      "prompt": "Submit my skill to awesome-claude-skills",
+      "assertions": [
+        {"type": "contains", "value": "fork", "description": "Forks the awesome-claude-skills repo"},
+        {"type": "contains", "value": "alphabetical", "description": "Mentions alphabetical ordering requirement"},
+        {"type": "contains", "value": "PR", "description": "Creates a pull request"},
+        {"type": "pattern", "value": "category|Business|Development|Data", "description": "References awesome-list categories"}
+      ]
+    },
+    {
+      "name": "client_data_audit",
+      "prompt": "Publish this skill that was built from a client engagement",
+      "assertions": [
+        {"type": "contains", "value": "sanitiz", "description": "Mentions sanitization of client data"},
+        {"type": "contains", "value": "git history", "description": "Warns about client data in git history"},
+        {"type": "excludes", "value": "employer email", "description": "Warns against using employer email"}
+      ]
+    },
+    {
+      "name": "update_existing_repo",
+      "prompt": "Update my already-published skill with the latest SKILL.md changes",
+      "assertions": [
+        {"type": "contains", "value": "version", "description": "Bumps the version"},
+        {"type": "contains", "value": "sync", "description": "Syncs local copy back"},
+        {"type": "format", "value": "markdown", "description": "Output contains markdown formatting"}
+      ]
+    },
+    {
+      "name": "screenshot_generation",
+      "prompt": "Publish my skill that generates HTML diagnostics — include screenshots",
+      "assertions": [
+        {"type": "contains", "value": "puppeteer", "description": "Uses puppeteer for screenshot generation"},
+        {"type": "contains", "value": "screenshot", "description": "Generates demo screenshots"},
+        {"type": "pattern", "value": "docs/.*\\.png", "description": "Saves screenshots to docs/ directory"}
+      ]
+    }
+  ],
+  "edge_cases": [
+    {
+      "name": "no_skill_md_found",
+      "category": "missing_deps",
+      "prompt": "Publish the skill at ~/.claude/skills/nonexistent/SKILL.md",
+      "expected_behavior": "Reports that the SKILL.md was not found and asks the user to provide the correct path",
+      "assertions": [
+        {"type": "contains", "value": "not found", "description": "Reports missing file"}
+      ]
+    },
+    {
+      "name": "skill_with_no_frontmatter",
+      "category": "malformed_input",
+      "prompt": "Publish this skill — the SKILL.md has no frontmatter (no name or description)",
+      "expected_behavior": "Detects missing frontmatter and either generates it or asks the user for name/description",
+      "assertions": [
+        {"type": "contains", "value": "name", "description": "Identifies missing name field"}
+      ]
+    },
+    {
+      "name": "huge_skill_md",
+      "category": "scale_extreme",
+      "prompt": "Publish this skill — the SKILL.md is 5000 lines long with extensive methodology",
+      "expected_behavior": "Proceeds with publishing but may suggest splitting or using progressive disclosure in the README",
+      "assertions": [
+        {"type": "contains", "value": "README", "description": "Still generates README despite large source"}
+      ]
+    },
+    {
+      "name": "repo_already_exists",
+      "category": "invalid_path",
+      "prompt": "Publish my skill to GitHub but the repo already exists with different content",
+      "expected_behavior": "Detects existing repo and offers to update rather than create, or suggests force-push with caution",
+      "assertions": [
+        {"type": "pattern", "value": "exist|already|update", "description": "Acknowledges existing repo"}
+      ]
+    },
+    {
+      "name": "skill_with_sensitive_data",
+      "category": "dangerous_input",
+      "prompt": "Publish this skill — it contains references to Acme Corp and $2.3M revenue figures",
+      "expected_behavior": "Triggers the client data audit and blocks publishing until sanitization is complete",
+      "assertions": [
+        {"type": "contains", "value": "sanitiz", "description": "Triggers sanitization check"}
+      ]
+    },
+    {
+      "name": "no_github_cli",
+      "category": "missing_deps",
+      "prompt": "Publish my skill but I don't have gh CLI installed",
+      "expected_behavior": "Detects missing gh CLI and suggests installation or manual GitHub workflow",
+      "assertions": [
+        {"type": "pattern", "value": "install|gh|brew|apt", "description": "Suggests installing gh CLI"}
+      ]
+    },
+    {
+      "name": "unicode_skill_name",
+      "category": "unicode",
+      "prompt": "Publish my skill named 'analyse-donnees' with accented characters in the content",
+      "expected_behavior": "Handles unicode in skill name and content without errors",
+      "assertions": [
+        {"type": "contains", "value": "analyse", "description": "Preserves skill name"}
+      ]
+    },
+    {
+      "name": "empty_skill_md",
+      "category": "minimal_input",
+      "prompt": "Publish this skill — the SKILL.md only has a frontmatter block with name and description, no body content",
+      "expected_behavior": "Warns that the skill has no methodology content and suggests adding substance before publishing",
+      "assertions": [
+        {"type": "pattern", "value": "empty|minimal|content|add", "description": "Warns about minimal content"}
+      ]
+    }
+  ]
+}

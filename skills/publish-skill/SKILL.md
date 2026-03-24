@@ -2,14 +2,21 @@
 name: publish-skill
 description: |
   Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo. Use when
-  the user says "publish this skill", "put this on GitHub", "share this skill", or wants to
-  update an existing published skill repo. Covers: repo structure (.claude-plugin packaging,
-  skills/ directory, LICENSE), README generation with demo screenshots via puppeteer,
-  multi-agent review panel for README quality, research verification of thresholds/claims,
-  visual distinction of grounded vs heuristic thresholds, GitHub repo metadata (description,
-  topics), PR submission to awesome-claude-skills, and PDF output for HTML-generating skills.
-  Also use when updating an existing published skill repo (version bump, README improvement,
-  commit squashing).
+  the user says "publish this skill", "put this on GitHub", "share this skill", "release this
+  skill publicly", "open source my skill", "make this skill installable", "create a GitHub repo
+  for my skill", "package this skill for the marketplace", or wants to update an existing
+  published skill repo. Also trigger when the user says "submit to awesome-claude-skills",
+  "add my skill to the awesome list", "how do I let others install my skill?", "I finished my
+  skill, now what?", "push my skill to a public repo", "generate a README and publish",
+  "bump the version and republish", or "turn my local skill into a polished repo".
+  Covers: repo structure (.claude-plugin packaging, skills/ directory, LICENSE), README
+  generation with demo screenshots via puppeteer, multi-agent review panel for README quality,
+  research verification of thresholds/claims, visual distinction of grounded vs heuristic
+  thresholds, GitHub repo metadata (description, topics), PR submission to
+  awesome-claude-skills, and PDF output for HTML-generating skills.
+  Do NOT use for creating new skills from scratch (use skill-creator instead), improving
+  skill trigger accuracy or quality (use schliff instead), general code deployment,
+  writing READMEs for non-skill projects, or non-skill package management.
 ---
 
 # Publish Skill to GitHub
@@ -591,3 +598,51 @@ EOF
 ```
 
 Types: `feat:` (new feature), `docs:` (README/docs), `fix:` (bug fix), `chore:` (packaging)
+
+## Composability & Integration
+
+### Input / Output Contract
+
+**Input:** A target skill path (e.g., `~/.claude/skills/{name}/SKILL.md`) containing valid
+frontmatter with `name` and `description` fields. The skill must exist locally before publishing.
+
+**Output:** A complete GitHub repository with `SKILL.md`, `README.md`, `LICENSE`, `plugin.json`,
+`marketplace.json`, and optionally `docs/` with demo screenshots. Returns the GitHub repo URL
+and (optionally) the awesome-claude-skills PR URL.
+
+### Dependencies
+
+- Requires `git` (any version) for repo creation and pushing
+- Requires `gh` CLI (GitHub CLI) for `gh repo create`, `gh api`, and PR creation. If `gh` is not
+  available, fall back to manual GitHub workflow instructions
+- Optionally depends on `npm` + `puppeteer` for screenshot generation (skip gracefully if unavailable)
+- Compatible with Claude Code v1.0+ and works with Cursor 2.4+ via `.cursor/rules/` copy
+
+### Error Handling
+
+- If SKILL.md is not found at the target path, report the error and ask for the correct path
+- If `gh` CLI fails (auth, network), provide manual git + GitHub web UI fallback instructions
+- If puppeteer screenshot generation fails, skip screenshots and note the gap in the README
+- If the GitHub repo already exists, detect and offer update flow instead of failing on create
+
+### Idempotency
+
+Safe to re-run on the same skill. Running publish-skill twice produces the same repo structure.
+Updating an already-published skill is an explicit supported workflow (version bump + push).
+No destructive side effects on the local skill installation.
+
+### Scope Boundaries
+
+- **Use this skill when** the user wants to publish, share, release, or update a skill repo
+- **Do NOT use for** creating new skills from scratch (use `skill-creator` instead),
+  improving skill quality/triggers (use `schliff`), general code deployment to cloud providers,
+  or writing READMEs for non-skill projects
+- **Hand off to** `skill-creator` if the user needs to build a skill first, then come back here;
+  hand off to `schliff` if the user wants to improve the skill before publishing;
+  hand off to `agent-review-panel` for README quality review (this skill invokes it as a sub-step)
+
+### Namespace
+
+All generated files are scoped to the `publish-skill` workflow namespace:
+`plugin.json`, `marketplace.json`, and repo structure under `{skill-name}/`. Does not modify
+files outside the target repo directory or `~/.claude/skills/{name}/`.
