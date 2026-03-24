@@ -36,6 +36,10 @@ Step 8: Awesome Lists          → (Optional) Submit PRs with correct formatting
 - You say "publish this skill", "put this on GitHub", or "share this skill"
 - You want to submit a skill to awesome-claude-skills marketplaces
 - You need to update an already-published skill's GitHub presence
+- "Submit to awesome-claude-skills" / "add my skill to the awesome list"
+- "How do I let others install my skill?" / "I finished my skill, now what?"
+- "Push my skill to a public repo" / "generate a README and publish"
+- "Bump the version and republish" / "turn my local skill into a polished repo"
 
 ## Hard-Won Lessons Encoded
 
@@ -146,10 +150,15 @@ Extracted via [Claudeception](https://github.com/wan-huiyan/ai-trust-evaluation)
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.4.0 | 2026-03-24 | Enrich trigger description, add eval suite, add composability metadata (schliff score: 61.9 → 86.7) |
 | 1.3.0 | 2026-03-24 | Add hooks bundling, multi-section screenshots, fork guidance, Why MIT rationale, pitfalls restructuring |
 | 1.2.0 | 2026-03-23 | Add awesome-claude-skills submission guidelines, domain-distance guidance |
 | 1.1.0 | 2026-03-22 | Add Step 0 client data audit, PR editing workflow |
 | 1.0.0 | 2026-03-21 | Initial release |
+
+## Acknowledgements
+
+Trigger accuracy and eval suite improved using [schliff](https://github.com/Zandereins/schliff) — an autonomous skill scoring and improvement framework (composite score: 61.9 → 86.7).
 
 ## License
 
