@@ -115,6 +115,8 @@ skill-name/
 ├── skills/
 │   └── skill-name/
 │       └── SKILL.md          # Installable copy
+├── hooks/                    # Suggested hooks (if applicable)
+│   └── {hook-name}.sh        # Ready-to-use hook script
 ├── docs/                     # Screenshots (if visual output)
 │   ├── demo-{name}.html      # HTML source for screenshots
 │   └── demo-{name}.png       # Generated screenshot
@@ -187,17 +189,19 @@ Follow this structure (order matters for first-time visitor conversion):
    ```
 
    **IMPORTANT:** `claude install-skill` is NOT a real command. Never use it in READMEs.
-5. **What You Get** — concrete, tangible outputs
-6. **Comparison table** — "Typical Ad-Hoc vs With Skill" (realistic baseline, not strawman)
-7. **How It Works** — step table
-8. **Key Design Decisions** — the non-obvious architectural choices
-9. **Limitations** — what it does NOT do. Builds trust with technical audiences.
-10. **Dependencies** — required vs optional. Explain what happens *without* each.
-11. **Quality Checklist** in `<details>` — what the skill guarantees
-12. **Related Skills** — cross-link companion skills with hyperlinks
-13. **Research/References** in `<details>` — citations with hyperlinks, if applicable
-14. **Version History** — even 3 lines. Trust signal that it's maintained.
-15. **License** — MIT
+5. **Suggested Hook** (if applicable) — skills that benefit from automatic triggering should
+   include a ready-to-use hook config. See "Bundling Hooks with Skills" below.
+6. **What You Get** — concrete, tangible outputs
+7. **Comparison table** — "Typical Ad-Hoc vs With Skill" (realistic baseline, not strawman)
+8. **How It Works** — step table
+9. **Key Design Decisions** — the non-obvious architectural choices
+10. **Limitations** — what it does NOT do. Builds trust with technical audiences.
+11. **Dependencies** — required vs optional. Explain what happens *without* each.
+12. **Quality Checklist** in `<details>` — what the skill guarantees
+13. **Related Skills** — cross-link companion skills with hyperlinks
+14. **Research/References** in `<details>` — citations with hyperlinks, if applicable
+15. **Version History** — even 3 lines. Trust signal that it's maintained.
+16. **License** — MIT
 
 ### README Anti-Patterns (from review panels)
 
@@ -258,6 +262,61 @@ Thresholds in *italic* are practitioner heuristics — adjust for your domain.
 | Gain ratio | **Rank-based** | [Quinlan (1993)](link) |
 | Coverage gaps | *>20%* | Heuristic |
 ```
+
+### Bundling Hooks with Skills
+
+Some skills benefit from automatic triggering via Claude Code hooks. If your skill can
+enhance existing workflows without user invocation (e.g., post-commit checks, post-write
+formatting, pre-tool validation), include a suggested hook configuration.
+
+**When to include a hook:**
+
+| Skill type | Hook event | Example |
+|---|---|---|
+| Git workflow tools | `PostToolUse` on `Bash` (filter for `git commit`) | Squash hint after trivial commits |
+| Code quality tools | `PostToolUse` on `Write\|Edit` | Auto-lint, type-check, or validate |
+| Safety/audit tools | `PreToolUse` on `Bash` | Block dangerous commands |
+| Session lifecycle | `Stop` or `SessionStart` | Save learnings, load context |
+
+**What to include in the published skill:**
+
+1. **A `hooks/` directory** with the ready-to-use script(s). Users copy to `~/.claude/hooks/`.
+2. **A "Suggested Hook" section in SKILL.md** with:
+   - The `settings.json` snippet (hook config JSON)
+   - Explanation of what it does and when it fires
+   - Merge note: "If you already have PostToolUse hooks, add to the existing array"
+3. **A brief mention in README** (between Installation and What You Get) with an example
+   of what the hook output looks like, linking to SKILL.md for the full setup.
+
+**Hook design principles:**
+
+- **Passive, not active.** Hooks should suggest, not act. A squash hint is fine; auto-squashing
+  without confirmation is dangerous.
+- **Fast.** Hooks run on every matching tool call. Keep them under 5 seconds (set `timeout: 5`).
+- **Silent on non-match.** If the hook doesn't apply (e.g., the Bash command wasn't `git commit`),
+  exit immediately with no output. Don't print "no action needed."
+- **Use `hookSpecificOutput.additionalContext`** to inject suggestions into the conversation
+  (the model sees it). Use `systemMessage` for user-visible warnings.
+- **Merge-friendly.** Document that users should add your hook entry to existing arrays,
+  not replace them. Show the minimal JSON snippet, not a full settings.json.
+
+**Example from git-squash skill:**
+
+```json
+// In settings.json — PostToolUse array
+{
+  "matcher": "Bash",
+  "hooks": [{
+    "type": "command",
+    "command": "~/.claude/hooks/squash-hint.sh",
+    "timeout": 5,
+    "statusMessage": "Checking commit..."
+  }]
+}
+```
+
+The hook script checks if the command was `git commit`, scores the last commit on message/diff/timing
+heuristics, and injects a `/squash` suggestion if the score is 60+.
 
 ## Step 4: Generate Demo Screenshots
 
