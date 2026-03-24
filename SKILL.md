@@ -122,8 +122,15 @@ skill-name/
 │   └── demo-{name}.png       # Generated screenshot
 ├── SKILL.md                  # Root copy (same content as skills/)
 ├── README.md
-└── LICENSE                   # MIT
+└── LICENSE                   # MIT (see "Why MIT" below)
 ```
+
+**Why MIT?** MIT is the standard choice for Claude Code skills — not because this guide says so,
+but for independent reasons: (1) ~44% of licensed GitHub repos use MIT, so developers recognise
+it instantly, (2) skills are small utility code where the value is the methodology, not the code
+itself — restrictive licenses discourage adoption without protecting anything meaningful, (3) the
+skill ecosystem (awesome-claude-skills) overwhelmingly uses MIT, creating consistency for users.
+Alternatives: Apache 2.0 if patent protection matters; avoid GPL (too restrictive for skills).
 
 **plugin.json template:**
 ```json
@@ -343,7 +350,13 @@ await page.screenshot({
   clip: { x: box.x - 20, y: box.y - 10, width: box.width + 40, height: box.height + 20 },
 });
 ```
-3. Clean up `node_modules/`, `package.json`, `package-lock.json` before committing
+3. **Multi-section screenshots** — for skills with rich, sectioned output (conference notes,
+   dashboards, multi-step reports), capture 2–4 focused screenshots of different sections rather
+   than a single hero image. This lets viewers see the variety of output without scrolling through
+   a massive single screenshot. Example sections: header+themes, session detail with research panel,
+   prioritised next steps. Name them `demo-header.png`, `demo-session.png`, `demo-actions.png` etc.
+   Use element-targeted clips (`page.$('#section-id').boundingBox()`) for each.
+4. Clean up `node_modules/`, `package.json`, `package-lock.json` before committing
 
 ## Step 5: Verify Claims and Thresholds
 
@@ -407,6 +420,11 @@ gh api repos/{username}/{skill-name}/topics -X PUT --input - <<'EOF'
 {"names":["claude-code","claude-code-skill","{domain-1}","{domain-2}"]}
 EOF
 ```
+
+**Fork contributions:** `gh repo edit` and the topics API require admin/owner access.
+If you're contributing via a fork PR (not the repo owner), you cannot set topics programmatically.
+Instead, include a "Suggested repo settings" section in the PR description listing recommended
+topics for the owner to add manually.
 
 ## Step 8: Submit to awesome-claude-skills (Optional)
 
