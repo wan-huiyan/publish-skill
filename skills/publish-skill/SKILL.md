@@ -407,6 +407,36 @@ Common panel findings across 5 repo reviews:
 - Quality Checklist removed (it was the quality contract)
 - Opening hook excludes non-target audiences
 
+## Step 6b: Verify All Links (REQUIRED)
+
+Before pushing, verify every link in the README actually works and points to the
+correct source. This catches two common problems:
+
+**1. Broken links (404s):** Schliff, Claudeception, and other tools get forked and
+moved. The repo you linked last month may not exist today.
+
+```bash
+# Extract all GitHub repo links and check each one
+grep -oP 'https://github\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+' README.md | sort -u | while read url; do
+  repo=$(echo "$url" | sed 's|https://github.com/||')
+  if gh api "repos/$repo" --jq .full_name 2>/dev/null > /dev/null; then
+    echo "OK: $url"
+  else
+    echo "BROKEN: $url"
+  fi
+done
+```
+
+**2. Wrong attribution (fork instead of upstream):** When you install a skill from
+someone else's repo, your README should link to the ORIGINAL author's repo, not your
+own fork. Common mistakes:
+- `brainstorming` / `using-superpowers` → should link to `obra/superpowers`, not your fork
+- `schliff` → should link to `Zandereins/schliff`, not any fork
+- `claudeception` → built-in skill, no separate repo (don't link to a random repo)
+
+**Rule of thumb:** If you didn't write the skill, link to the upstream repo. Check
+with `gh api repos/OWNER/REPO --jq .fork` — if it returns `true`, find the parent.
+
 ## Step 7: Create GitHub Repo and Push
 
 ```bash
@@ -579,10 +609,17 @@ Key CSS rules for clean page breaks:
 ## Updating an Existing Published Skill
 
 1. Update SKILL.md (both root and `skills/` copy)
-2. Bump version in `plugin.json` and `marketplace.json`
-3. Update README if user-facing behavior changed
-4. For clean history: `git reset --soft HEAD~N && git commit` then `git push --force-with-lease`
-5. Sync local: `cp skills/{name}/SKILL.md ~/.claude/skills/{name}/SKILL.md`
+2. Bump version in `.claude-plugin/plugin.json` AND `.claude-plugin/marketplace.json`
+   (description fields too — not just version numbers)
+3. Update README: version history section, feature table, any stale references
+4. Update `references/changelog.md` if it exists
+5. **Verify nothing was missed:** `grep -rn "old_version" .` to find stale version strings
+6. For clean history: `git reset --soft HEAD~N && git commit` then `git push --force-with-lease`
+7. Sync local: `cp skills/{name}/SKILL.md ~/.claude/skills/{name}/SKILL.md`
+
+**Common failure mode:** SKILL.md gets updated via PRs but README and .claude-plugin/
+files lag behind — they still show the old version. Always update all 4 locations in
+the same commit.
 
 ## Commit Message Convention
 
