@@ -135,12 +135,12 @@ git clone https://github.com/wan-huiyan/publish-skill.git ~/.cursor/skills/publi
 ## Related Skills
 
 - [skill-creator](https://github.com/anthropics/claude-code) — for creating skills from scratch
-- [claudeception](https://github.com/wan-huiyan/ai-trust-evaluation) — for extracting skills from work sessions
+- claudeception — for extracting skills from work sessions (built-in skill, no separate repo)
 - [agent-review-panel](https://github.com/wan-huiyan/agent-review-panel) — for stress-testing skills before publishing
 
 ## Origin
 
-Extracted via [Claudeception](https://github.com/wan-huiyan/ai-trust-evaluation) from a multi-session publishing workflow that included:
+Extracted via Claudeception from a multi-session publishing workflow that included:
 - Publishing [ai-trust-evaluation](https://github.com/wan-huiyan/ai-trust-evaluation) through v1.0 → v2.0 → v3.0
 - Publishing [agent-review-panel](https://github.com/wan-huiyan/agent-review-panel) through v2.0 → v2.5
 - Submitting both to [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) and [travisvn/awesome-claude-code](https://github.com/travisvn/awesome-claude-code)
