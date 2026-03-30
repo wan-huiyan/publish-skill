@@ -203,6 +203,8 @@ Follow this structure (order matters for first-time visitor conversion):
    ```
 
    **IMPORTANT:** `claude install-skill` is NOT a real command. Never use it in READMEs.
+   The correct plugin install command is: `claude plugin install <plugin-name>`
+   For git-based installs: `git clone https://github.com/{username}/{skill-name}.git ~/.claude/skills/{skill-name}`
 5. **Suggested Hook** (if applicable) — skills that benefit from automatic triggering should
    include a ready-to-use hook config. See "Bundling Hooks with Skills" below.
 6. **What You Get** — concrete, tangible outputs
@@ -388,6 +390,27 @@ Launch 1 agent per threshold/claim in parallel. Each agent searches for:
 | Population >200 | **Misattributed.** Van der Ploeg = 200 EPV. | 20-300 range (LightGBM docs) |
 
 **Rule:** Label honestly. Bold for published, italic for heuristic.
+
+## Step 5b: Portability Check (Skills Built from Project Work)
+
+Skills born from real project work often embed project-specific details that limit reusability. Before publishing, scan for tool/vendor/project specificity and abstract to transferable patterns.
+
+**For each piece of guidance in the skill, ask:** "Would this advice still apply if the user was using a different database, language, or framework?" If the answer is "only with modifications," abstract further.
+
+| Specific (don't publish) | Transferable (publish this) |
+|--------------------------|----------------------------|
+| "Use `APPLICATION_VERSION_VALID_FROM` for SCD range queries" | "For versioned history sources, use a range query on validity window columns" |
+| "Join via `APPLICATION_ID` (98.3% match)" | "Test ALL ID-like columns for overlap before concluding a join is impossible" |
+| "Snowflake SCD has ~7-day freshness lag" | "Versioned sources may have freshness lag — use real-time snapshot for serving if lag is unacceptable" |
+| "XGBoost handles NaN natively" | "Verify that your model framework handles missing values from train/serve feature asymmetry" |
+
+**Checklist:**
+- [ ] No vendor-specific table/column names in the guidance (unless the skill is explicitly vendor-scoped)
+- [ ] Patterns are described by what they solve, not by the specific tool that implements them
+- [ ] Examples use placeholder names (`source_table`, `validity_start`, `entity_id`) not real ones
+- [ ] If the skill references a specific technology, it also describes the general pattern so users on other stacks can adapt
+
+**Why this matters:** Skills that reference specific tools age poorly (the tool changes, the table gets renamed, the API evolves). Skills that teach principles stay useful across projects and years.
 
 ## Step 6: Review Panel for README (Recommended)
 
