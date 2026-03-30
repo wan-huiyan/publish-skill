@@ -203,6 +203,8 @@ Follow this structure (order matters for first-time visitor conversion):
    ```
 
    **IMPORTANT:** `claude install-skill` is NOT a real command. Never use it in READMEs.
+   The correct plugin install command is: `claude plugin install <plugin-name>`
+   For git-based installs: `git clone https://github.com/{username}/{skill-name}.git ~/.claude/skills/{skill-name}`
 5. **Suggested Hook** (if applicable) — skills that benefit from automatic triggering should
    include a ready-to-use hook config. See "Bundling Hooks with Skills" below.
 6. **What You Get** — concrete, tangible outputs
@@ -388,6 +390,27 @@ Launch 1 agent per threshold/claim in parallel. Each agent searches for:
 | Population >200 | **Misattributed.** Van der Ploeg = 200 EPV. | 20-300 range (LightGBM docs) |
 
 **Rule:** Label honestly. Bold for published, italic for heuristic.
+
+## Step 5b: Portability Check (Skills Built from Project Work)
+
+Skills born from real project work often embed project-specific details that limit reusability. Before publishing, scan for tool/vendor/project specificity and abstract to transferable patterns.
+
+**For each piece of guidance in the skill, ask:** "Would this advice still apply if the user was using a different database, language, or framework?" If the answer is "only with modifications," abstract further.
+
+| Specific (don't publish) | Transferable (publish this) |
+|--------------------------|----------------------------|
+| "Use `APPLICATION_VERSION_VALID_FROM` for SCD range queries" | "For versioned history sources, use a range query on validity window columns" |
+| "Join via `APPLICATION_ID` (98.3% match)" | "Test ALL ID-like columns for overlap before concluding a join is impossible" |
+| "Snowflake SCD has ~7-day freshness lag" | "Versioned sources may have freshness lag — use real-time snapshot for serving if lag is unacceptable" |
+| "XGBoost handles NaN natively" | "Verify that your model framework handles missing values from train/serve feature asymmetry" |
+
+**Checklist:**
+- [ ] No vendor-specific table/column names in the guidance (unless the skill is explicitly vendor-scoped)
+- [ ] Patterns are described by what they solve, not by the specific tool that implements them
+- [ ] Examples use placeholder names (`source_table`, `validity_start`, `entity_id`) not real ones
+- [ ] If the skill references a specific technology, it also describes the general pattern so users on other stacks can adapt
+
+**Why this matters:** Skills that reference specific tools age poorly (the tool changes, the table gets renamed, the API evolves). Skills that teach principles stay useful across projects and years.
 
 ## Step 6: Review Panel for README (Recommended)
 
@@ -608,18 +631,54 @@ Key CSS rules for clean page breaks:
 
 ## Updating an Existing Published Skill
 
-1. Update SKILL.md (both root and `skills/` copy)
-2. Bump version in `.claude-plugin/plugin.json` AND `.claude-plugin/marketplace.json`
-   (description fields too — not just version numbers)
-3. Update README: version history section, feature table, any stale references
-4. Update `references/changelog.md` if it exists
-5. **Verify nothing was missed:** `grep -rn "old_version" .` to find stale version strings
-6. For clean history: `git reset --soft HEAD~N && git commit` then `git push --force-with-lease`
-7. Sync local: `cp skills/{name}/SKILL.md ~/.claude/skills/{name}/SKILL.md`
+**Full version bump checklist** (all in the same commit):
 
-**Common failure mode:** SKILL.md gets updated via PRs but README and .claude-plugin/
-files lag behind — they still show the old version. Always update all 4 locations in
-the same commit.
+1. `SKILL.md` (root copy — frontmatter version + heading)
+2. `skills/{name}/SKILL.md` (nested copy — often forgotten)
+3. `~/.claude/skills/{name}/SKILL.md` (installed copy — full overwrite if behind)
+4. `.claude-plugin/plugin.json` (version field + keywords)
+5. `marketplace.json` (version field + keywords)
+6. `README.md` (version history table, feature list, research credits)
+7. `references/changelog.md` (if exists)
+
+Then verify: `grep -rn "old_version" .` to find stale version strings.
+
+**Common failure modes:**
+- README and .claude-plugin/ files lag behind SKILL.md — always update all in one commit
+- Nested `skills/` copy forgotten — it diverges silently from the root copy
+- Installed `~/.claude/skills/` copy is N versions behind — if it's more than 1 version
+  behind, do a full overwrite rather than incremental patching
+
+## Phase Numbering in SKILL.md Workflows
+
+When a skill has a multi-phase workflow (7+ phases), use **named stages with sequential
+numbering** instead of decimal sub-phases:
+
+**Avoid:** `1, 1.5, 2, 3, 3.5, 4, 5, 5.5, 6, 7, 7.5` — confusing, implies sub-phases
+are secondary, and accumulates as the skill evolves.
+
+**Prefer:** Group phases into 3-4 named stages, number sequentially within the full
+workflow:
+
+```
+| Stage        | Phase | Action                    |
+|--------------|-------|---------------------------|
+| **Gather**   | 1.    | Collect inputs            |
+|              | 2.    | Detect specialists        |
+| **Analyze**  | 3.    | Extract findings          |
+|              | 4.    | Cross-reference           |
+|              | 5.    | Filter                    |
+|              | 6.    | Classify                  |
+| **Apply**    | 7.    | Apply edits               |
+|              | 8.    | Verify                    |
+| **Finalize** | 9.    | Update peripherals        |
+|              | 10.   | Produce summary           |
+|              | 11.   | Persistent log            |
+```
+
+Stage names communicate *intent* (what kind of work), phase numbers communicate *order*.
+Fix numbering early (pre-v2.0) — renumbering gets harder as external references and
+integration logs accumulate.
 
 ## Commit Message Convention
 
