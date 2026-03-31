@@ -11,7 +11,7 @@
       "name": "publish-skill",
       "source": ".",
       "description": "Publish Claude Code skills to GitHub and awesome-claude-skills lists",
-      "version": "1.0.0"
+      "version": "1.5.0"
     }
   ]
 }
