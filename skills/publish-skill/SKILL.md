@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 1.5.0
+version: 1.6.0
 description: |
   Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo. Use when
   the user says "publish this skill", "put this on GitHub", "share this skill", "release this
@@ -649,6 +649,12 @@ Then verify: `grep -rn "old_version" .` to find stale version strings.
 - Nested `skills/` copy forgotten — it diverges silently from the root copy
 - Installed `~/.claude/skills/` copy is N versions behind — if it's more than 1 version
   behind, do a full overwrite rather than incremental patching
+- **Metadata updated but SKILL.md forgotten** — when updating eval suites, docs, or
+  packaging files, it's easy to bump versions in plugin.json/marketplace.json/README
+  while forgetting to update the actual SKILL.md frontmatter. The skill content is the
+  primary artifact — update it FIRST, then propagate to metadata files. A repo where
+  `plugin.json` says v1.5 but `SKILL.md` has no version field (or says v1.0) signals
+  that the publishing process itself wasn't followed.
 
 ## Phase Numbering in SKILL.md Workflows
 
