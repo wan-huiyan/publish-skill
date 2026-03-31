@@ -1,5 +1,6 @@
 ---
 name: publish-skill
+version: 1.5.0
 description: |
   Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo. Use when
   the user says "publish this skill", "put this on GitHub", "share this skill", "release this
