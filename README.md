@@ -132,6 +132,59 @@ npx skills add wan-huiyan/publish-skill --global
 git clone https://github.com/wan-huiyan/publish-skill.git ~/.cursor/skills/publish-skill
 ```
 
+## Eval Suite Coverage
+
+The skill includes a comprehensive evaluation suite (`eval-suite.json`) with **45 trigger tests**, **12 functional test cases**, and **16 edge cases**.
+
+<details>
+<summary><b>Trigger tests (45)</b> — validate when the skill should and shouldn't activate</summary>
+
+- 25 positive triggers: "publish this skill", "republish", "share my .claude skill", compound intents, etc.
+- 20 negative triggers: "deploy to production", "publish my npm package", "make a GitHub repo" (no skill context), "improve this skill's quality", etc.
+</details>
+
+<details>
+<summary><b>Functional test cases (12)</b> — cover every major workflow step</summary>
+
+| Test case | What it validates |
+|---|---|
+| `basic_publish_flow` | Full publish pipeline: SKILL.md, README, LICENSE, plugin.json, marketplace.json, valid install commands |
+| `repo_structure_validation` | Correct directory structure with .claude-plugin, skills/, LICENSE |
+| `awesome_list_submission` | Fork workflow, alphabetical ordering, categories, description length, no test plan in PR |
+| `client_data_audit` | Sanitization, git history warning, orphan branch cleanup, visual asset scanning |
+| `update_existing_repo` | Version bump across all 7 locations (SKILL.md, nested copy, plugin.json, marketplace.json, README) |
+| `screenshot_generation` | Puppeteer usage, docs/ output, node_modules cleanup, generic demo scenarios |
+| `threshold_verification` | Grounded vs heuristic labeling, ranking-based thresholds |
+| `portability_check` | Flags vendor-specific references, suggests placeholder names |
+| `review_panel` | Multi-agent review invocation, screenshot and limitations checks |
+| `link_verification` | Broken link detection, fork vs upstream attribution |
+| `hook_bundling` | hooks/ directory, settings.json config, timeout guidance, merge-friendly advice |
+| `version_bump_completeness` | All update locations bumped, stale version string check |
+</details>
+
+<details>
+<summary><b>Edge cases (16)</b> — error paths, permissions, and unusual inputs</summary>
+
+| Edge case | Category |
+|---|---|
+| `no_skill_md_found` | missing_deps |
+| `skill_with_no_frontmatter` | malformed_input |
+| `huge_skill_md` | scale_extreme |
+| `repo_already_exists` | invalid_path |
+| `skill_with_sensitive_data` | dangerous_input |
+| `no_github_cli` | missing_deps |
+| `unicode_skill_name` | unicode |
+| `empty_skill_md` | minimal_input |
+| `fork_contributor_permissions` | permissions |
+| `multiple_skills_batch` | scale_extreme |
+| `network_failure_mid_publish` | missing_deps |
+| `yaml_frontmatter_conflict` | malformed_input |
+| `marketplace_name_collision` | conflict |
+| `skill_with_hooks_already` | existing_content |
+| `repo_not_owned_by_user` | permissions |
+| `puppeteer_not_available` | missing_deps |
+</details>
+
 ## Related Skills
 
 - [skill-creator](https://github.com/anthropics/claude-code) — for creating skills from scratch
@@ -150,6 +203,7 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.5.0 | 2026-03-31 | Expand eval suite: 35→45 triggers, 6→12 test cases, 8→16 edge cases; strengthen assertions on existing tests |
 | 1.4.0 | 2026-03-24 | Enrich trigger description, add eval suite, add composability metadata (schliff score: 61.9 → 86.7) |
 | 1.3.0 | 2026-03-24 | Add hooks bundling, multi-section screenshots, fork guidance, Why MIT rationale, pitfalls restructuring |
 | 1.2.0 | 2026-03-23 | Add awesome-claude-skills submission guidelines, domain-distance guidance |
