@@ -56,6 +56,7 @@ These rules were learned from real incidents during publishing:
 | Fork contributors can't set topics | `gh repo edit --add-topic` requires admin access — suggest topics in PR description instead |
 | Multi-section screenshots beat single hero | For rich output skills, 2–4 focused section screenshots show variety better than one long image |
 | Don't cite your own skill as authority | "MIT because publish-skill says so" is circular — justify recommendations with independent reasoning |
+| Update SKILL.md FIRST, metadata second | Updated eval-suite, README, plugin.json, and marketplace.json to v1.5 — but forgot to add a version field to SKILL.md itself. The skill content is the primary artifact; metadata files follow it, not the other way around |
 
 ## Example: What the Skill Produces
 
@@ -203,6 +204,7 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.6.0 | 2026-03-31 | Add "update SKILL.md first" lesson after metadata-only version bump missed the skill itself |
 | 1.5.0 | 2026-03-31 | Expand eval suite: 35→45 triggers, 6→12 test cases, 8→16 edge cases; strengthen assertions on existing tests |
 | 1.4.0 | 2026-03-24 | Enrich trigger description, add eval suite, add composability metadata (schliff score: 61.9 → 86.7) |
 | 1.3.0 | 2026-03-24 | Add hooks bundling, multi-section screenshots, fork guidance, Why MIT rationale, pitfalls restructuring |
