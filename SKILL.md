@@ -30,7 +30,23 @@ Turn a local Claude Code skill into a polished, adoptable open-source GitHub rep
 - User wants to update an already-published skill repo
 - User asks to submit a skill to awesome-claude-skills or a marketplace
 
+## Companion Skills (optional, recommended)
+
+These skills automate the hardest parts of safe publishing. If installed, they'll
+be invoked automatically at the relevant steps:
+
+- **[skill-anonymizer](https://github.com/wan-huiyan/skill-anonymizer)** — Automates Step 0 (client data audit). Three-category scan + git history cleaning.
+  `git clone https://github.com/wan-huiyan/skill-anonymizer.git ~/.claude/skills/skill-anonymizer`
+- **[data-provenance-verifier](https://github.com/wan-huiyan/data-provenance-verifier)** — Automates data file verification for skills that ship with datasets.
+  `git clone https://github.com/wan-huiyan/data-provenance-verifier.git ~/.claude/skills/data-provenance-verifier`
+- **repo-hygiene** — Pre-publish cleanup checklist (stale files, secrets, .gitignore, __pycache__). Run before Step 1.
+- **schliff** — Score skill quality on 7 dimensions (triggers, examples, structure) before investing in packaging. Run before Step 0.
+- **agent-review-panel** — Multi-agent adversarial review for README quality. Already used in Step 6.
+
 ## Step 0: Client Data Audit (CRITICAL — do this FIRST)
+
+If `skill-anonymizer` is installed, run `/skill-anonymizer` on the skill first — it
+automates this entire step with systematic three-category scanning and replacement rules.
 
 Before publishing ANYTHING, scan for client-identifying data. Skills built from
 real engagements often contain details that can identify clients:
@@ -391,6 +407,9 @@ Launch 1 agent per threshold/claim in parallel. Each agent searches for:
 | Population >200 | **Misattributed.** Van der Ploeg = 200 EPV. | 20-300 range (LightGBM docs) |
 
 **Rule:** Label honestly. Bold for published, italic for heuristic.
+
+If the skill ships with data files (CSV, JSON, examples/), run `data-provenance-verifier`
+to ensure all data is genuine and has provenance documentation before publishing.
 
 ## Step 5b: Portability Check (Skills Built from Project Work)
 
