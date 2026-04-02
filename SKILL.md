@@ -131,6 +131,27 @@ run `/plugin install {skill-name}@{marketplace-name}`, so use a descriptive name
 Follow this structure (order matters for first-time visitor conversion):
 
 1. **Title + one-line descriptor** — what it IS, factual. Not a scenario.
+1b. **Badge row** — immediately after the title. Provides at-a-glance trust signals.
+   Generate badges from the skill's metadata:
+
+   ```markdown
+   [![version](https://img.shields.io/badge/version-{VERSION}-blue)]({REPO_URL}/releases)
+   [![license](https://img.shields.io/badge/license-{LICENSE}-green)](LICENSE)
+   [![python](https://img.shields.io/badge/python-{PY_VERSIONS}-yellow)](https://www.python.org/)
+   [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange)](https://claude.com/claude-code)
+   ```
+
+   **Optional badges** (add when the skill has them):
+   - Eval assertions: `[![eval](https://img.shields.io/badge/eval_assertions-{N}_passed-brightgreen)](eval-suite.json)` — if eval-suite.json exists
+   - Academic grounding: `[![papers](https://img.shields.io/badge/grounded_in-{N}%2B_papers-blueviolet)](references/bibliography.md)` — if references/ exists with bibliography
+
+   **Where to get values:**
+   - `{VERSION}`: from SKILL.md frontmatter `version:` field
+   - `{LICENSE}`: from LICENSE file (MIT, Apache-2.0, etc.)
+   - `{PY_VERSIONS}`: from SKILL.md description or requirements (e.g., "3.9--3.12")
+   - `{N}` assertions: count entries in eval-suite.json `assertions` array
+   - `{N}` papers: count entries in references/bibliography.md
+
 2. **Screenshot** (if visual output) — above the fold. This is the #1 adoption driver.
 3. **Quick Start** — conversation example showing usage flow
 4. **Installation** — Claude Code + Cursor:
