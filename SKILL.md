@@ -42,83 +42,27 @@ be invoked automatically at the relevant steps:
 - **repo-hygiene** — Pre-publish cleanup checklist (stale files, secrets, .gitignore, __pycache__). Run before Step 1.
 - **schliff** — Score skill quality on 7 dimensions (triggers, examples, structure) before investing in packaging. Run before Step 0.
 - **agent-review-panel** — Multi-agent adversarial review for README quality. Already used in Step 6.
+- **skill-sync** — Ongoing sync of published skills with their GitHub repos. Run `/skill-sync init` after publishing to register the new skill for future updates.
 
 ## Step 0: Client Data Audit (CRITICAL — do this FIRST)
 
-If `skill-anonymizer` is installed, run `/skill-anonymizer` on the skill first — it
-automates this entire step with systematic three-category scanning and replacement rules.
+If `skill-anonymizer` is installed, run `/skill-anonymizer` first — it automates this step.
 
-Before publishing ANYTHING, scan for client-identifying data. Skills built from
-real engagements often contain details that can identify clients:
+Scan for client-identifying data before publishing. Combination risk: even innocuous details (campaign type + currency + dates + industry) can identify a client when combined.
 
-**What to scan for:**
-```
-Grep: company names, brand names, institution names
-Grep: specific dollar/pound amounts from real engagements
-Grep: real people's names, employer emails
-Grep: internal URLs, project codes, Jira tickets
-Grep: field names from client databases (e.g., merit_award_scholarship_tier)
-```
-
-**Combination risk:** Even individually innocuous details (a campaign type +
-currency + dates + industry) can identify a client when combined. "Free delivery
-promo, £297K uplift, Jan 2026, UK retail" narrows to a handful of companies.
-
-**Check ALL of these:**
-- SKILL.md (methodology sections often reference real cases)
-- README.md (quick start examples, origin sections)
-- Demo screenshots/HTML (field names, amounts, dates visible in images)
-- marketplace.json (author email — don't use employer email)
-- Supporting files (references/, docs/, examples/)
+**Scan targets:** SKILL.md, README.md, demo screenshots/HTML, marketplace.json (no employer email), supporting files (references/, docs/, examples/).
 
 **Sanitization checklist:**
-- [ ] Replace client/institution names with generic labels ("a retail client", "a university")
+- [ ] Replace client/institution names with generic labels
 - [ ] Change specific amounts to synthetic numbers AND switch currency
 - [ ] Replace employer email with personal email or remove
 - [ ] Regenerate screenshots from sanitized HTML source
-- [ ] Clean git history — old data lives in previous commits even after editing!
-      Use orphan branch + force-push to remove: `git checkout --orphan clean && ...`
+- [ ] Clean git history via orphan branch + force-push (old commits expose prior versions)
 - [ ] Add disclaimer: "All examples use synthetic data"
-- [ ] Check demo screenshots for visible field names that could identify a domain
-- [ ] Verify demo scenario is domain-distant (see below)
+- [ ] Check demo screenshots for identifiable field names
+- [ ] Verify demo scenario is domain-distant from real client work
 
-**Choosing demo scenarios — domain distance matters:**
-
-Even after sanitizing names and amounts, a demo in the same DOMAIN as real client
-work raises questions internally. "SaaS customer churn" is generic to the public
-but not to a team that builds churn models for clients. Sanitizing the data isn't
-enough — you need to swap the entire domain.
-
-**Safe demo scenarios** (far from typical consultancy work):
-- NYC taxi trip duration prediction (public TLC dataset)
-- City speed limit impact on traffic accidents (public safety)
-- Weather station sensor anomaly detection
-- Movie rating prediction (MovieLens dataset)
-- Equipment failure prediction (manufacturing IoT)
-- Public transit ridership forecasting
-- Air quality index prediction
-
-**Generally safe** (common enough to be generic):
-- E-commerce revenue / conversion / churn
-- Campaign ROI / marketing attribution
-- Retail demand forecasting
-- SaaS subscription metrics
-
-**Avoid these** (identifiable when combined with specific field names/amounts):
-- Enrollment / admissions prediction (ties to specific institution clients)
-- Any scenario using real client field names, even with synthetic data
-- Niche industry verticals where your team has few clients (easy to narrow down)
-
-**Rule of thumb:** Common domains (e-commerce, churn, retail) are fine for demos
-because they're universal. The risk is when you combine a niche domain with
-specific field names, amounts, or dates that could narrow to a particular client.
-Enrollment prediction with `merit_award_scholarship_tier` identifies one client;
-"e-commerce churn" with `days_since_last_purchase` identifies nobody.
-
-**Why git history matters:** Even if you sanitize the current files, `git log -p`
-shows every previous version. Client names, amounts, and screenshots in old commits
-are still accessible. For sensitive data removal, create an orphan branch with only
-the clean version and force-push.
+**Demo domain selection:** Use common domains (e-commerce, churn, retail, SaaS) or public datasets (NYC taxi, MovieLens). Avoid niche verticals where your team has few clients. Even sanitized data in the same domain as client work raises questions.
 
 ## Step 1: Locate the Skill
 
@@ -149,12 +93,7 @@ skill-name/
 └── LICENSE                   # MIT (see "Why MIT" below)
 ```
 
-**Why MIT?** MIT is the standard choice for Claude Code skills — not because this guide says so,
-but for independent reasons: (1) ~44% of licensed GitHub repos use MIT, so developers recognise
-it instantly, (2) skills are small utility code where the value is the methodology, not the code
-itself — restrictive licenses discourage adoption without protecting anything meaningful, (3) the
-skill ecosystem (awesome-claude-skills) overwhelmingly uses MIT, creating consistency for users.
-Alternatives: Apache 2.0 if patent protection matters; avoid GPL (too restrictive for skills).
+**Why MIT?** Standard for Claude Code skills (~44% of GitHub). Apache 2.0 if patent protection matters; avoid GPL.
 
 **plugin.json template:**
 ```json
@@ -251,36 +190,15 @@ Follow this structure (order matters for first-time visitor conversion):
 
 ### Pitfalls / "What This Catches" Section
 
-If the skill addresses pitfalls or common mistakes, structure them in two tiers:
+Structure pitfalls in two tiers:
+- **Tier 1: Strategic pitfalls** (lead) — broad problems that cost weeks, model-agnostic. Answer "do I need this?"
+- **Tier 2: Implementation pitfalls** (follow) — code-level traps, framework-specific. Answer "is this thorough?"
 
-**Tier 1: Strategic pitfalls** (lead with these — they're the selling points):
-- Problems that cost teams *weeks* (wrong assumptions, missed opportunities, silent degradation)
-- Model-agnostic or broadly applicable — don't narrow the audience prematurely
-- Written as "you think X, but actually Y" — the reader should feel the pain
+Apply this strategic-first ordering to ALL list/table sections (pitfalls, "what worked", "key lessons", "what you get"). If the README already has strong narrative sections, keep them but add a scannable "What This Catches" list as a quick entry point.
 
-**Tier 2: Implementation pitfalls** (follow with these — they show thoroughness):
-- Specific code-level traps (`.fillna(0)`, sentinel values, off-by-one errors)
-- Framework-specific details (XGBoost NaN routing, sklearn CV leakage)
-- These impress *after* the reader is already sold, but repel if they lead
+### Narrative Sections ("Journey", "Case Study")
 
-**Why this order matters:** Strategic pitfalls answer "do I need this tool?" Implementation pitfalls answer "is this tool thorough?" Leading with Tier 2 makes the skill look like a tips-and-tricks collection for one framework, when the real value is the structured diagnostic.
-
-**Apply the same principle to ALL list/table sections**, not just pitfalls:
-- **"What worked" tables** — lead with broadly applicable techniques (covariate safety audit, pre-period selection), then domain-specific methods (RDiT, conformal CIs)
-- **"Key Lessons" lists** — strategic lessons first ("subtract before you add", "two methods > one"), tactical lessons second ("nseasons=7 makes DoW redundant")
-- **"What You Get" bullets** — high-level outcomes first (go/no-go verdict, client-ready deliverable), diagnostic details second
-
-**When the README already has strong narrative sections** (e.g., a "Journey" story showing real problem-solving), don't restructure those — they're effective as-is. Instead, *add* a "What This Catches" section as a scannable entry point that a first-time visitor can skim in 10 seconds. The narrative convinces people who are already interested; the scannable list catches people who are still deciding.
-
-### Narrative Sections ("Journey", "Case Study", "How We Got Here")
-
-Narrative sections that show real problem-solving (e.g., "p=0.223 → p=0.039 through systematic improvements") are powerful selling devices — they prove the skill was battle-tested, not theoretical. But they can read as narrow anecdotes if framed wrong.
-
-**Frame as methodology, not anecdote.** The intro should make clear the story illustrates the skill's *systematic process*, not one lucky outcome:
-- **Bad:** "Starting from the same 4 days of campaign data, systematic improvements achieved significance"
-- **Good:** "Every causal analysis follows the same pattern: a promising-but-not-significant first result, then systematic improvements that either find the real signal or confirm there isn't one. Here's what that looks like:"
-
-The difference: "bad" says "here's what happened once." "Good" says "this is what the skill does every time, illustrated by one run." The reader infers their analysis would follow the same disciplined process.
+Frame narratives as methodology, not anecdote. The intro must show the story illustrates the skill's *systematic process*, not one lucky outcome. Bad: "we achieved X." Good: "Every analysis follows this pattern — here's one run."
 
 ### Decision Criteria Tables with Provenance
 
@@ -413,24 +331,12 @@ to ensure all data is genuine and has provenance documentation before publishing
 
 ## Step 5b: Portability Check (Skills Built from Project Work)
 
-Skills born from real project work often embed project-specific details that limit reusability. Before publishing, scan for tool/vendor/project specificity and abstract to transferable patterns.
-
-**For each piece of guidance in the skill, ask:** "Would this advice still apply if the user was using a different database, language, or framework?" If the answer is "only with modifications," abstract further.
-
-| Specific (don't publish) | Transferable (publish this) |
-|--------------------------|----------------------------|
-| "Use `APPLICATION_VERSION_VALID_FROM` for SCD range queries" | "For versioned history sources, use a range query on validity window columns" |
-| "Join via `APPLICATION_ID` (98.3% match)" | "Test ALL ID-like columns for overlap before concluding a join is impossible" |
-| "Snowflake SCD has ~7-day freshness lag" | "Versioned sources may have freshness lag — use real-time snapshot for serving if lag is unacceptable" |
-| "XGBoost handles NaN natively" | "Verify that your model framework handles missing values from train/serve feature asymmetry" |
+For each piece of guidance, ask: "Would this apply with a different database/language/framework?" If not, abstract further.
 
 **Checklist:**
-- [ ] No vendor-specific table/column names in the guidance (unless the skill is explicitly vendor-scoped)
-- [ ] Patterns are described by what they solve, not by the specific tool that implements them
-- [ ] Examples use placeholder names (`source_table`, `validity_start`, `entity_id`) not real ones
-- [ ] If the skill references a specific technology, it also describes the general pattern so users on other stacks can adapt
-
-**Why this matters:** Skills that reference specific tools age poorly (the tool changes, the table gets renamed, the API evolves). Skills that teach principles stay useful across projects and years.
+- [ ] No vendor-specific table/column names (unless skill is explicitly vendor-scoped)
+- [ ] Patterns described by what they solve, not the specific tool
+- [ ] Specific technology references include the general pattern for other stacks
 
 ## Step 6: Review Panel for README (Recommended)
 
@@ -545,12 +451,7 @@ over ~150 chars will likely be flagged by reviewers.
 - Implementation details (e.g., "entropy/gain ratio, conditional MI, incremental CV AUC")
 - Step counts only if they don't add clarity (e.g., "10-step diagnostic" IS useful, "covers Q1-Q8" is NOT)
 
-**Examples of good vs bad descriptions:**
-
-| Too long (flagged by reviewer) | Shortened (approved) |
-|-------------------------------|---------------------|
-| "Multi-agent adversarial review panel where Claude Code subagents with different perspectives review work, debate, reach consensus, then a supreme judge renders the final verdict. Based on ChatEval, AutoGen, MachineSoM, and DebateLLM research." | "Multi-agent adversarial review panel where Claude Code subagents debate from different perspectives before a supreme judge renders the final verdict." |
-| "Assess whether an ML training window can be extended by adding a new data source. Covers per-output label validity, drift-aware validation (PSI), purged temporal CV with embargo, XGBoost NaN handling for missing feature blocks, and companion model vs extended training architecture decisions." | "Evaluate ML training window extensions with per-output label validity, drift checks, and architecture recommendations." |
+**Rule of thumb:** Drop paper references, specific counts, and implementation details from the description. Keep the core value proposition.
 
 ### 8c: Create the PR
 
@@ -623,12 +524,17 @@ git add . && git commit -m "..." && git push origin {branch}
 **Common mistake:** Cloning the upstream repo and fetching `pull/{num}/head` gives you a
 detached ref you can't push back to. Always clone the fork directly.
 
-## Step 9: Sync Local Skill
+## Step 9: Register for Ongoing Sync
 
-After publishing, ensure the local installation matches:
-```bash
-cp {repo}/skills/{skill-name}/SKILL.md ~/.claude/skills/{skill-name}/SKILL.md
+After publishing, register the skill so future updates can be pushed with `/skill-sync`:
+
 ```
+/skill-sync init
+```
+
+This scans your GitHub repos and matches them to local skill directories.
+For ongoing updates (editing SKILL.md, eval-suite.json, etc.), use `/skill-sync push {name}`
+instead of manually cloning and copying. See the **skill-sync** companion skill for details.
 
 ## PDF Output for HTML-Generating Skills
 
@@ -651,60 +557,19 @@ Key CSS rules for clean page breaks:
 
 ## Updating an Existing Published Skill
 
-**Full version bump checklist** (all in the same commit):
+For ongoing updates to already-published skills, use the **skill-sync** companion skill:
 
-1. `SKILL.md` (root copy — frontmatter version + heading)
-2. `skills/{name}/SKILL.md` (nested copy — often forgotten)
-3. `~/.claude/skills/{name}/SKILL.md` (installed copy — full overwrite if behind)
-4. `.claude-plugin/plugin.json` (version field + keywords)
-5. `marketplace.json` (version field + keywords)
-6. `README.md` (version history table, feature list, research credits)
-7. `references/changelog.md` (if exists)
+```
+/skill-sync push {skill-name}
+```
 
-Then verify: `grep -rn "old_version" .` to find stale version strings.
-
-**Common failure modes:**
-- README and .claude-plugin/ files lag behind SKILL.md — always update all in one commit
-- Nested `skills/` copy forgotten — it diverges silently from the root copy
-- Installed `~/.claude/skills/` copy is N versions behind — if it's more than 1 version
-  behind, do a full overwrite rather than incremental patching
-- **Metadata updated but SKILL.md forgotten** — when updating eval suites, docs, or
-  packaging files, it's easy to bump versions in plugin.json/marketplace.json/README
-  while forgetting to update the actual SKILL.md frontmatter. The skill content is the
-  primary artifact — update it FIRST, then propagate to metadata files. A repo where
-  `plugin.json` says v1.5 but `SKILL.md` has no version field (or says v1.0) signals
-  that the publishing process itself wasn't followed.
+This handles cloning, copying tracked files, committing, and pushing automatically.
+For version bumps (not just content edits), skill-sync includes a full checklist
+covering all 7 files that need version updates. See `/skill-sync` for details.
 
 ## Phase Numbering in SKILL.md Workflows
 
-When a skill has a multi-phase workflow (7+ phases), use **named stages with sequential
-numbering** instead of decimal sub-phases:
-
-**Avoid:** `1, 1.5, 2, 3, 3.5, 4, 5, 5.5, 6, 7, 7.5` — confusing, implies sub-phases
-are secondary, and accumulates as the skill evolves.
-
-**Prefer:** Group phases into 3-4 named stages, number sequentially within the full
-workflow:
-
-```
-| Stage        | Phase | Action                    |
-|--------------|-------|---------------------------|
-| **Gather**   | 1.    | Collect inputs            |
-|              | 2.    | Detect specialists        |
-| **Analyze**  | 3.    | Extract findings          |
-|              | 4.    | Cross-reference           |
-|              | 5.    | Filter                    |
-|              | 6.    | Classify                  |
-| **Apply**    | 7.    | Apply edits               |
-|              | 8.    | Verify                    |
-| **Finalize** | 9.    | Update peripherals        |
-|              | 10.   | Produce summary           |
-|              | 11.   | Persistent log            |
-```
-
-Stage names communicate *intent* (what kind of work), phase numbers communicate *order*.
-Fix numbering early (pre-v2.0) — renumbering gets harder as external references and
-integration logs accumulate.
+For 7+ phase workflows, use named stages (Gather/Analyze/Apply/Finalize) with sequential numbering. Avoid decimal sub-phases (1.5, 3.5) — they imply sub-phases are secondary and accumulate confusingly. Fix numbering early (pre-v2.0).
 
 ## Commit Message Convention
 
