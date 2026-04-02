@@ -1,4 +1,5 @@
 # Publish Skill - Claude Code Skill
+[![GitHub release](https://img.shields.io/github/v/release/wan-huiyan/publish-skill)](https://github.com/wan-huiyan/publish-skill/releases) [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange)](https://claude.com/claude-code) [![license](https://img.shields.io/github/license/wan-huiyan/publish-skill)](LICENSE) [![last commit](https://img.shields.io/github/last-commit/wan-huiyan/publish-skill)](https://github.com/wan-huiyan/publish-skill/commits)
 
 A Claude Code skill that handles the full workflow of publishing other skills to GitHub and optionally submitting them to awesome-claude-skills marketplace lists. Encodes hard-won lessons from real publishing attempts — the kind of mistakes you only make once.
 
