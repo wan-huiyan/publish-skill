@@ -207,7 +207,7 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 |---|---|---|
 | 1.6.0 | 2026-03-31 | Add "update SKILL.md first" lesson after metadata-only version bump missed the skill itself |
 | 1.5.0 | 2026-03-31 | Expand eval suite: 35→45 triggers, 6→12 test cases, 8→16 edge cases; strengthen assertions on existing tests |
-| 1.4.0 | 2026-03-24 | Enrich trigger description, add eval suite, add composability metadata (schliff score: 61.9 → 86.7) |
+| 1.4.0 | 2026-03-24 | Enrich trigger description, add eval suite, add composability metadata |
 | 1.3.0 | 2026-03-24 | Add hooks bundling, multi-section screenshots, fork guidance, Why MIT rationale, pitfalls restructuring |
 | 1.2.0 | 2026-03-23 | Add awesome-claude-skills submission guidelines, domain-distance guidance |
 | 1.1.0 | 2026-03-22 | Add Step 0 client data audit, PR editing workflow |
@@ -215,7 +215,7 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 
 ## Acknowledgements
 
-Trigger accuracy and eval suite improved using [schliff](https://github.com/Zandereins/schliff) — an autonomous skill scoring and improvement framework (composite score: 61.9 → 86.7).
+Trigger accuracy and eval suite improved using [schliff](https://github.com/Zandereins/schliff) — an autonomous skill scoring and improvement framework.
 
 ## License
 
