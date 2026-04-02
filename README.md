@@ -189,7 +189,7 @@ The skill includes a comprehensive evaluation suite (`eval-suite.json`) with **4
 
 ## Related Skills
 
-- [skill-creator](https://github.com/anthropics/claude-code) — for creating skills from scratch
+- [skill-creator](https://docs.anthropic.com/en/docs/claude-code/skills) — for creating skills from scratch
 - claudeception — for extracting skills from work sessions (built-in skill, no separate repo)
 - [agent-review-panel](https://github.com/wan-huiyan/agent-review-panel) — for stress-testing skills before publishing
 
