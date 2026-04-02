@@ -132,22 +132,35 @@ Follow this structure (order matters for first-time visitor conversion):
 
 1. **Title + one-line descriptor** — what it IS, factual. Not a scenario.
 1b. **Badge row** — immediately after the title. Provides at-a-glance trust signals.
-   Generate badges from the skill's metadata:
+
+   **Prefer dynamic badges** (auto-update from GitHub API) over static ones:
 
    ```markdown
-   [![version](https://img.shields.io/badge/version-{VERSION}-blue)]({REPO_URL}/releases)
-   [![license](https://img.shields.io/badge/license-{LICENSE}-green)](LICENSE)
+   [![GitHub release](https://img.shields.io/github/v/release/{USERNAME}/{SKILL_NAME})]({REPO_URL}/releases)
+   [![license](https://img.shields.io/github/license/{USERNAME}/{SKILL_NAME})](LICENSE)
+   [![last commit](https://img.shields.io/github/last-commit/{USERNAME}/{SKILL_NAME})]({REPO_URL}/commits)
    [![python](https://img.shields.io/badge/python-{PY_VERSIONS}-yellow)](https://www.python.org/)
    [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange)](https://claude.com/claude-code)
    ```
 
-   **Optional badges** (add when the skill has them):
-   - Eval assertions: `[![eval](https://img.shields.io/badge/eval_assertions-{N}_passed-brightgreen)](eval-suite.json)` — if eval-suite.json exists
-   - Academic grounding: `[![papers](https://img.shields.io/badge/grounded_in-{N}%2B_papers-blueviolet)](references/bibliography.md)` — if references/ exists with bibliography
+   **Dynamic badges** (no manual updates needed):
+   - `github/v/release` — reads from GitHub Releases (create a release first!)
+   - `github/license` — reads from repo metadata
+   - `github/last-commit` — shows repo activity (signals maintenance)
+
+   **Static badges** (update manually or via skill-sync):
+   - `badge/python-{PY_VERSIONS}-yellow` — no GitHub API source
+   - `badge/Claude_Code-skill-orange` — constant marker
+   - `badge/eval_assertions-{N}_passed-brightgreen` — if eval-suite.json exists
+   - `badge/grounded_in-{N}%2B_papers-blueviolet` — if references/ with bibliography
+
+   **Important:** Dynamic version badge requires a GitHub Release. Create one:
+   ```bash
+   gh release create v{VERSION} --title "v{VERSION}" --notes "Release notes"
+   ```
 
    **Where to get values:**
-   - `{VERSION}`: from SKILL.md frontmatter `version:` field
-   - `{LICENSE}`: from LICENSE file (MIT, Apache-2.0, etc.)
+   - `{USERNAME}/{SKILL_NAME}`: GitHub owner/repo (e.g., `wan-huiyan/causal-impact-campaign`)
    - `{PY_VERSIONS}`: from SKILL.md description or requirements (e.g., "3.9--3.12")
    - `{N}` assertions: count entries in eval-suite.json `assertions` array
    - `{N}` papers: count entries in references/bibliography.md
