@@ -193,6 +193,12 @@ The skill includes a comprehensive evaluation suite (`eval-suite.json`) with **4
 - claudeception — for extracting skills from work sessions (built-in skill, no separate repo)
 - [agent-review-panel](https://github.com/wan-huiyan/agent-review-panel) — for stress-testing skills before publishing
 
+## Limitations
+
+- Requires an existing SKILL.md before use — does not create skills from scratch (use skill-creator for that)
+- Screenshot generation requires Puppeteer; skipped automatically if not installed
+- Does not submit to awesome-claude-skills automatically — the PR step requires manual review
+
 ## Origin
 
 Extracted via Claudeception from a multi-session publishing workflow that included:
