@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 1.6.0
+version: 2.0.0
 description: |
   Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo. Use when
   the user says "publish this skill", "put this on GitHub", "share this skill", "release this
@@ -75,27 +75,60 @@ Read the frontmatter to extract: name, description, version, author.
 
 ## Step 2: Create Repo Structure
 
+**⚠️ BREAKING CHANGE IN v2.0.0:** The canonical Claude Code plugin layout places
+`marketplace.json` INSIDE `.claude-plugin/` (not at repo root) and each plugin lives
+in its own `plugins/<name>/` subdirectory. Skills published with the v1.x layout
+will fail the `claude plugin install` flow with `Invalid schema: plugins.0.source:
+Invalid input`. See "Common failure modes" section at the end of this skill for
+details. Mirror the layout of [claude-plugins-official](https://github.com/anthropics/claude-plugins-official)
+and [voltagent-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents) —
+they are the canonical reference implementations.
+
 ```
-skill-name/
+skill-name/                          # ← repo root (becomes the marketplace)
 ├── .claude-plugin/
-│   └── plugin.json           # Plugin manifest (name, version, description)
-├── marketplace.json            # Marketplace index (at root, NOT inside .claude-plugin)
-├── skills/
-│   └── skill-name/
-│       └── SKILL.md          # Installable copy
-├── hooks/                    # Suggested hooks (if applicable)
-│   └── {hook-name}.sh        # Ready-to-use hook script
-├── docs/                     # Screenshots (if visual output)
-│   ├── demo-{name}.html      # HTML source for screenshots
-│   └── demo-{name}.png       # Generated screenshot
-├── SKILL.md                  # Root copy (same content as skills/)
-├── README.md
-└── LICENSE                   # MIT (see "Why MIT" below)
+│   └── marketplace.json            # ← MUST be inside .claude-plugin/ (NOT at repo root)
+├── plugins/
+│   └── skill-name/                 # ← each plugin in its own subdirectory
+│       ├── .claude-plugin/
+│       │   └── plugin.json         # ← plugin manifest INSIDE plugins/<name>/.claude-plugin/
+│       ├── SKILL.md                # ← canonical plugin skill location
+│       ├── hooks/                  # ← plugin-specific hooks (if applicable)
+│       │   └── {hook-name}.sh
+│       └── references/             # ← files referenced by SKILL.md
+├── docs/                           # ← repo-level (screenshots, case studies)
+│   ├── demo-{name}.html
+│   └── demo-{name}.png
+├── tests/                          # ← repo-level (manifest consistency, etc.)
+├── README.md                       # ← repo-level (GitHub browsers see this)
+├── LICENSE                         # ← MIT (see "Why MIT" below)
+└── package.json                    # ← optional, for npm-based tests
 ```
 
 **Why MIT?** Standard for Claude Code skills (~44% of GitHub). Apache 2.0 if patent protection matters; avoid GPL.
 
-**plugin.json template:**
+**Key rules** (verified against the Claude Code docs at
+https://code.claude.com/docs/en/plugin-marketplaces):
+
+1. `marketplace.json` lives at `.claude-plugin/marketplace.json`, NOT at the repo root.
+   The old v1.x layout (marketplace.json at root) silently fails `claude plugin marketplace add` —
+   the marketplace never registers in `~/.claude/plugins/known_marketplaces.json` and the
+   subsequent error message is misleading.
+2. Each plugin lives in `plugins/<plugin-name>/`, never at the marketplace root. Claude Code
+   copies the plugin directory into a cache on install — if the plugin were the marketplace
+   directory, this would be recursive self-reference, and the schema validator rejects it.
+3. `plugins[0].source` in marketplace.json must start with `./` AND point to a subdirectory.
+   Valid: `"./plugins/skill-name"`. Invalid: `"."` or `"./"` (rejected by schema validator).
+4. The plugin's manifest lives at `plugins/<plugin-name>/.claude-plugin/plugin.json`, NOT at
+   the repo root.
+5. SKILL.md lives at `plugins/<plugin-name>/SKILL.md` (the canonical skill location).
+   Do NOT keep a second SKILL.md at the repo root — if the two fall out of sync, only the
+   nested one is loaded when users install via `claude plugin install`, and the root copy
+   becomes stale and misleading.
+
+**Why MIT?** Standard for Claude Code skills (~44% of GitHub). Apache 2.0 if patent protection matters; avoid GPL.
+
+**plugin.json template** (place at `plugins/{skill-name}/.claude-plugin/plugin.json`):
 ```json
 {
   "name": "{skill-name}",
@@ -108,23 +141,110 @@ skill-name/
 }
 ```
 
-**marketplace.json template** (place at repo ROOT, not inside .claude-plugin):
+**marketplace.json template** (place at `.claude-plugin/marketplace.json` — NOT the repo root):
 ```json
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "{username}-{skill-name}",
+  "description": "{one-line marketplace description — required by validators}",
   "owner": { "name": "{user's name}" },
   "plugins": [{
     "name": "{skill-name}",
-    "source": ".",
-    "description": "{one-line}",
+    "source": "./plugins/{skill-name}",
+    "description": "{one-line plugin description}",
     "version": "{version}"
   }]
 }
 ```
 
-**CRITICAL:** marketplace.json `name` becomes the marketplace identifier. Users will
-run `/plugin install {skill-name}@{marketplace-name}`, so use a descriptive name like
-`wan-huiyan-ai-trust-evaluation`.
+**CRITICAL — distinguishing names:**
+
+- **Plugin name** (`plugins[0].name`): what users type in the install command, e.g. `skill-name`.
+  Must match the `name` field in `plugin.json`.
+- **Marketplace name** (top-level `name`): the marketplace identifier, e.g. `{username}-{skill-name}`.
+  Can be owner-prefixed to avoid collisions across users publishing plugins with the same name.
+- Users install with: `/plugin install {skill-name}@{username}-{skill-name}` — note the `@` separator.
+
+The two names are DIFFERENT. A common mistake is to make them identical or to assume the
+install command takes just the marketplace name — both fail.
+
+### Step 2.5: Verify the layout locally BEFORE pushing
+
+After creating the files, verify the install flow works locally before publishing. This
+catches all three layout bugs that cost 4+ PRs to debug in the wild:
+
+```bash
+# 1. Verify marketplace.json is in .claude-plugin/ (NOT repo root)
+test -f .claude-plugin/marketplace.json && echo "✓ marketplace.json in right place" || echo "✗ WRONG PATH"
+
+# 2. Verify plugin.json is inside plugins/<name>/.claude-plugin/
+test -f plugins/{skill-name}/.claude-plugin/plugin.json && echo "✓ plugin.json in right place" || echo "✗ WRONG PATH"
+
+# 3. Verify source path in marketplace.json starts with ./plugins/
+grep '"source"' .claude-plugin/marketplace.json  # should show "./plugins/{skill-name}", never "." or "./"
+
+# 4. Locally test the marketplace add (requires a committed working tree on a local path)
+claude plugin marketplace add ./
+
+# 5. Verify it actually registered
+cat ~/.claude/plugins/known_marketplaces.json | grep {marketplace-name}
+# If nothing appears, the marketplace add silently failed — the layout is wrong
+
+# 6. Clean up the local test marketplace before pushing
+claude plugin marketplace remove {marketplace-name}
+```
+
+Alternatively, validate via the built-in CLI (faster, no side effects):
+
+```bash
+claude plugin validate .
+# or inside a Claude Code session:
+# /plugin validate .
+```
+
+Do NOT skip this step. The three layout bugs below all pass git/GitHub syntactically but
+fail Claude Code's schema validator or silently mis-register the marketplace.
+
+### Common failure modes (learned the hard way)
+
+These are the three bug layers that v1.x of this skill produced. If you follow the v2.0.0
+layout above, you will avoid all of them. If you inherit a v1.x skill repo, expect to hit
+them in sequence.
+
+**Layer 1: Deprecated install command in README** — v1.x READMEs sometimes showed
+`claude skill install <owner/repo>`. This command DOES NOT EXIST; the deprecated form was
+`claude install skill` which was removed. Users get "command not found" or confusing errors.
+Fix: always use the two-step flow `claude plugin marketplace add <owner/repo>` then
+`claude plugin install <plugin-name>@<marketplace-name>`.
+
+**Layer 2: marketplace.json at the wrong path** — v1.x placed `marketplace.json` at the
+repo root. Claude Code looks for it at `.claude-plugin/marketplace.json`. When the file is
+missing at the expected path, `claude plugin marketplace add` **silently fails** to register
+the marketplace — it doesn't error, it just doesn't write to
+`~/.claude/plugins/known_marketplaces.json`. The subsequent `plugin install` then reports a
+misleading error: `Plugin "X" not found in marketplace "Y"` (implying the plugin is missing,
+when the marketplace was never registered). Always verify via `cat ~/.claude/plugins/known_marketplaces.json`
+after running marketplace add — if your marketplace name isn't there, the path is wrong.
+
+**Layer 3: Plugin at the marketplace root** — v1.x used `"source": "."` or
+`"source": "./"` in `marketplace.json`, trying to make the repo root itself the plugin.
+Claude Code's schema validator rejects both with `Invalid schema: plugins.0.source: Invalid input`.
+Reason: Claude Code copies the plugin directory into a cache on install, so the plugin
+cannot BE the marketplace directory (self-reference). The docs explicitly state: "Local
+directory within the marketplace repo. Must start with `./`" — meaning a subdirectory,
+not the current directory. Always use `"source": "./plugins/<plugin-name>"`.
+
+**Test-suite gotcha:** If you use the `tests/manifest-consistency.test.mjs` pattern common
+in skill repos, check that it uses an ASSERTIVE check (`assert.ok(existsSync(path))`) rather
+than a GRACEFUL-DEGRADATION guard (`if (existsSync(path)) describe(...)`). The graceful form
+silently skips all marketplace.json assertions when the file is missing, producing green tests
+despite a broken repo. This masks the Layer 2 bug indefinitely.
+
+**Additional test-writing rule:** NEVER assert `marketplaceJson.name === pluginJson.name`.
+The marketplace name is owner-prefixed (e.g., `wan-huiyan-causal-impact-campaign`) while the
+plugin name is unprefixed (e.g., `causal-impact-campaign`). The real invariant to check is
+`marketplaceJson.plugins[0].name === pluginJson.name` — that's what users type in the
+install command after the `@`.
 
 ## Step 3: Write the README
 
@@ -371,6 +491,56 @@ For each piece of guidance, ask: "Would this apply with a different database/lan
 - [ ] No vendor-specific table/column names (unless skill is explicitly vendor-scoped)
 - [ ] Patterns described by what they solve, not the specific tool
 - [ ] Specific technology references include the general pattern for other stacks
+
+## Step 5c: Generate Tests and CI
+
+Generate an automated test suite from the skill's eval-suite.json and manifest files.
+This catches version mismatches, invalid regex patterns, duplicate IDs, and structural
+issues before they reach users. Tests run on every push via GitHub Actions.
+
+**Generated files:**
+- `tests/manifest-consistency.test.mjs` — cross-validates plugin.json, SKILL.md, eval-suite versions/names
+- `tests/eval-suite-integrity.test.mjs` — validates structure, regex compilation, ID uniqueness, trigger balance
+- `tests/trigger-classification.test.mjs` — validates trigger entries and skill name references
+- `.github/workflows/test.yml` — CI pipeline (Node.js 20+22 matrix)
+- `package.json` (if not present) — minimal, with `"test": "node --test tests/*.test.mjs"`
+
+**Templates location:** `~/Documents/skill-test-templates/` (generalized from agent-review-panel's 363-test suite)
+
+**Process:**
+1. Copy the 3 test templates from `~/Documents/skill-test-templates/` into the repo's `tests/` directory
+2. Copy `test.yml` into `.github/workflows/`
+3. Generate `package.json` if missing (parameterized from plugin.json name/version/description)
+4. Run `npm test` to verify all tests pass
+5. If tests fail, fix the underlying issues (version mismatches, invalid regexes, duplicate IDs) before proceeding
+
+**Or use the backfill script:** `~/Documents/skill-test-templates/backfill.sh /path/to/repo`
+
+**Skills WITHOUT eval-suite.json:** Only manifest-consistency tests are generated. eval-suite and trigger tests skip gracefully.
+
+After generating, add a Tests badge to the README:
+```markdown
+[![Tests](https://github.com/{owner}/{repo}/actions/workflows/test.yml/badge.svg)](https://github.com/{owner}/{repo}/actions/workflows/test.yml)
+```
+
+**⚠️ Critical test-writing rule:** When generating `manifest-consistency.test.mjs`, use
+**assertive** existence checks for required manifests, not graceful-degradation guards.
+```js
+// BAD — silently skips all assertions if marketplace.json is at the wrong path
+if (existsSync(marketplaceJsonPath)) {
+  describe("marketplace.json", () => { /* ... */ });
+}
+
+// GOOD — fails loudly if the file is missing or at the wrong path
+assert.ok(
+  existsSync(marketplaceJsonPath),
+  `marketplace.json must exist at .claude-plugin/marketplace.json`
+);
+```
+The graceful form masks the Layer 2 bug described in Step 2.5 — 160 tests pass green while
+the repo is actually broken for `claude plugin install`. Similarly, NEVER assert
+`marketplace.name === plugin.name` — those are different by convention (marketplace is
+owner-prefixed). The real invariant is `marketplace.plugins[0].name === plugin.name`.
 
 ## Step 6: Review Panel for README (Recommended)
 
