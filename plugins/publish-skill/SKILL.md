@@ -1,20 +1,32 @@
 ---
 name: publish-skill
-version: 2.0.0
+version: 2.1.0
 description: |
-  Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo. Use when
-  the user says "publish this skill", "put this on GitHub", "share this skill", "release this
-  skill publicly", "open source my skill", "make this skill installable", "create a GitHub repo
-  for my skill", "package this skill for the marketplace", or wants to update an existing
-  published skill repo. Also trigger when the user says "submit to awesome-claude-skills",
-  "add my skill to the awesome list", "how do I let others install my skill?", "I finished my
-  skill, now what?", "push my skill to a public repo", "generate a README and publish",
-  "bump the version and republish", or "turn my local skill into a polished repo".
-  Covers: repo structure (.claude-plugin packaging, skills/ directory, LICENSE), README
-  generation with demo screenshots via puppeteer, multi-agent review panel for README quality,
-  research verification of thresholds/claims, visual distinction of grounded vs heuristic
-  thresholds, GitHub repo metadata (description, topics), PR submission to
-  awesome-claude-skills, and PDF output for HTML-generating skills.
+  Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo, AND
+  diagnose `claude plugin install` failures on a published skill. Use when the user says
+  "publish this skill", "put this on GitHub", "share this skill", "release this skill publicly",
+  "open source my skill", "make this skill installable", "create a GitHub repo for my skill",
+  "package this skill for the marketplace", or wants to update an existing published skill
+  repo. Also trigger when the user says "submit to awesome-claude-skills", "add my skill to
+  the awesome list", "how do I let others install my skill?", "I finished my skill, now what?",
+  "push my skill to a public repo", "generate a README and publish", "bump the version and
+  republish", or "turn my local skill into a polished repo".
+  ALSO trigger on `claude plugin install` failures and diagnostic questions: `Plugin X not
+  found in any configured marketplace`, `Plugin X not found in marketplace Y`, `Invalid
+  schema: plugins.0.source: Invalid input`, `Failed to add marketplace: Failed to parse
+  marketplace file`, "my plugin install is failing", "why can't I install my own skill?",
+  "claude plugin marketplace add is silently failing", "plugin not found in marketplace",
+  "marketplace add appears to work but install fails", "debug plugin install", "wrong
+  marketplace.json path", "wrong plugin source field". The Common failure modes section
+  (Step 2.5) documents the three bug layers (deprecated command, wrong manifest path, wrong
+  source path) with symptoms, diagnoses, and fixes that apply to BOTH new publishes and
+  already-published broken skills.
+  Covers: canonical `plugins/<name>/` subdirectory layout (v2.0.0+), `.claude-plugin/marketplace.json`
+  packaging, README generation with demo screenshots via puppeteer, multi-agent review panel
+  for README quality, research verification of thresholds/claims, visual distinction of
+  grounded vs heuristic thresholds, GitHub repo metadata (description, topics), PR submission
+  to awesome-claude-skills, PDF output for HTML-generating skills, and end-to-end install
+  flow verification before publishing.
   Do NOT use for creating new skills from scratch (use skill-creator instead), improving
   skill trigger accuracy or quality (use schliff instead), general code deployment,
   writing READMEs for non-skill projects, or non-skill package management.
