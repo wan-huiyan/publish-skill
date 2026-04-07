@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "wan-huiyan-publish-skill",
+  "description": "Single-plugin marketplace for publish-skill — a Claude Code skill for publishing skills to GitHub and awesome-claude-skills lists with hard-won lessons encoded.",
+  "owner": {
+    "name": "wan-huiyan"
+  },
+  "plugins": [
+    {
+      "name": "publish-skill",
+      "source": "./plugins/publish-skill",
+      "description": "Publish Claude Code skills to GitHub and awesome-claude-skills lists with hard-won lessons encoded",
+      "version": "1.7.0"
+    }
+  ]
+}
