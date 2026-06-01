@@ -1,6 +1,6 @@
 {
   "name": "publish-skill",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Publish Claude Code skills to GitHub and awesome-claude-skills lists with hard-won lessons encoded",
   "author": {
     "name": "wan-huiyan",

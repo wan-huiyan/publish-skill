@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 2.1.0
+version: 2.2.0
 description: |
   Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo, AND
   diagnose `claude plugin install` failures on a published skill. Use when the user says
@@ -87,6 +87,8 @@ Read the frontmatter to extract: name, description, version, author.
 
 ## Step 2: Create Repo Structure
 
+> **User preference (Huiyan, standing rule, 2026-05-08):** Default to **Pattern B (multi-skill plugin)** for ALL new published plugins, even single-skill ones. Wrap the skill at `plugins/<plugin-name>/skills/<skill-name>/SKILL.md` rather than `plugins/<plugin-name>/SKILL.md`. This matches the `superpowers` plugin layout, lets the plugin grow to N skills later without restructuring, and gives one install command (`/plugin install <plugin>@<marketplace>`) that delivers the whole bundle. Pattern A (1-skill = 1-plugin) is documented below for reference and existing legacy publishes; do not produce new ones in that shape.
+
 **⚠️ BREAKING CHANGE IN v2.0.0:** The canonical Claude Code plugin layout places
 `marketplace.json` INSIDE `.claude-plugin/` (not at repo root) and each plugin lives
 in its own `plugins/<name>/` subdirectory. Skills published with the v1.x layout
@@ -96,15 +98,45 @@ details. Mirror the layout of [claude-plugins-official](https://github.com/anthr
 and [voltagent-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents) —
 they are the canonical reference implementations.
 
+### Pattern B (DEFAULT) — multi-skill plugin
+
+```
+plugin-name/                            # ← repo root (becomes the marketplace)
+├── .claude-plugin/
+│   └── marketplace.json               # ← MUST be inside .claude-plugin/
+├── plugins/
+│   └── plugin-name/                   # ← THE single plugin (same name as repo, by convention)
+│       ├── .claude-plugin/
+│       │   └── plugin.json            # ← plugin manifest INSIDE plugins/<name>/.claude-plugin/
+│       └── skills/
+│           ├── skill-1/
+│           │   ├── SKILL.md           # ← skill at plugins/<plugin>/skills/<skill>/SKILL.md
+│           │   ├── scripts/           # ← skill-specific files alongside SKILL.md
+│           │   └── references/
+│           ├── skill-2/SKILL.md
+│           └── ...
+├── docs/                              # ← repo-level (screenshots, case studies)
+├── tests/                             # ← repo-level
+├── README.md                          # ← repo-level
+├── LICENSE                            # ← MIT (see "Why MIT" below)
+└── package.json                       # ← optional
+```
+
+For a single-skill publication, use this same shape with one entry under `skills/`. Don't collapse to Pattern A — keep room to grow.
+
+### Pattern A (LEGACY — reference only) — 1 skill = 1 plugin
+
+Old shape, used by `dashboard-audit-toolkit`. Documented here so you can read existing repos in this layout, but **do not produce new publishes in this shape**:
+
 ```
 skill-name/                          # ← repo root (becomes the marketplace)
 ├── .claude-plugin/
-│   └── marketplace.json            # ← MUST be inside .claude-plugin/ (NOT at repo root)
+│   └── marketplace.json            # ← lists each skill as a separate plugin entry
 ├── plugins/
 │   └── skill-name/                 # ← each plugin in its own subdirectory
 │       ├── .claude-plugin/
 │       │   └── plugin.json         # ← plugin manifest INSIDE plugins/<name>/.claude-plugin/
-│       ├── SKILL.md                # ← canonical plugin skill location
+│       ├── SKILL.md                # ← canonical plugin skill location (NO skills/ wrapper)
 │       ├── hooks/                  # ← plugin-specific hooks (if applicable)
 │       │   └── {hook-name}.sh
 │       └── references/             # ← files referenced by SKILL.md
@@ -116,6 +148,10 @@ skill-name/                          # ← repo root (becomes the marketplace)
 ├── LICENSE                         # ← MIT (see "Why MIT" below)
 └── package.json                    # ← optional, for npm-based tests
 ```
+
+When publishing additional skills under a Pattern B plugin, just add another directory under `skills/` and update the README's plugin table — no marketplace or manifest changes needed beyond bumping `version` in `plugin.json`.
+
+> **README link-path gotcha when migrating Pattern A → Pattern B (or starting Pattern B from a Pattern A draft):** the per-skill links in your README must point at `plugins/<plugin>/skills/<skill>/`, NOT `plugins/<skill>/`. If you wrote the README expecting the older one-skill-per-plugin shape and then moved skills under `plugins/<plugin>/skills/`, every per-skill link will 404 on GitHub with "Error loading page" while everything still installs correctly via `claude plugin install`. Verify with: `python3 -c "import re,pathlib; [print('✗',l) for l in re.findall(r'\(plugins/[^)]+\)', pathlib.Path('README.md').read_text()) if not pathlib.Path(l.strip('()')).exists()]"` from the marketplace root.
 
 **Why MIT?** Standard for Claude Code skills (~44% of GitHub). Apache 2.0 if patent protection matters; avoid GPL.
 
