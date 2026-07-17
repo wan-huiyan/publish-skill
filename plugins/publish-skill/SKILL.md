@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 2.2.0
+version: 2.3.0
 description: |
   Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo, AND
   diagnose `claude plugin install` failures on a published skill. Use when the user says
@@ -10,7 +10,7 @@ description: |
   repo. Also trigger when the user says "submit to awesome-claude-skills", "add my skill to
   the awesome list", "how do I let others install my skill?", "I finished my skill, now what?",
   "push my skill to a public repo", "generate a README and publish", "bump the version and
-  republish", or "turn my local skill into a polished repo".
+  republish", "rename a published skill" / "rename my skill repo", or "turn my local skill into a polished repo".
   ALSO trigger on `claude plugin install` failures and diagnostic questions: `Plugin X not
   found in any configured marketplace`, `Plugin X not found in marketplace Y`, `Invalid
   schema: plugins.0.source: Invalid input`, `Failed to add marketplace: Failed to parse
@@ -564,6 +564,14 @@ issues before they reach users. Tests run on every push via GitHub Actions.
 
 **Or use the backfill script:** `~/Documents/skill-test-templates/backfill.sh /path/to/repo`
 
+> **Pattern-B gotcha (2026-07-16):** `backfill.sh` and the stock `manifest-consistency.test.mjs`
+> template expect the LEGACY layout (`.claude-plugin/plugin.json` at the repo root) and fail on
+> Pattern B ("ERROR: Could not extract skill name from .claude-plugin/plugin.json"). For Pattern-B
+> repos, hand-adapt the manifest test to the nested paths (`plugins/<name>/.claude-plugin/plugin.json`,
+> `plugins/<name>/skills/<skill>/SKILL.md`) with ASSERTIVE existence checks — worked example:
+> wan-huiyan/promptback `tests/manifest-consistency.test.mjs` (15 assertions incl.
+> source-path shape, owner-prefixed marketplace name, no stale root SKILL.md, README screenshot pins).
+
 **Skills WITHOUT eval-suite.json:** Only manifest-consistency tests are generated. eval-suite and trigger tests skip gracefully.
 
 After generating, add a Tests badge to the README:
@@ -818,6 +826,33 @@ For ongoing updates to already-published skills, use the **skill-sync** companio
 This handles cloning, copying tracked files, committing, and pushing automatically.
 For version bumps (not just content edits), skill-sync includes a full checklist
 covering all 7 files that need version updates. See `/skill-sync` for details.
+
+### Variant — Renaming a Published Skill (verified 2026-07-17, interactive-feedback-report → promptback)
+
+Order matters: repo first, then contents, then local, then references.
+
+1. **`gh repo rename <new> -R <owner>/<old> --yes`** — GitHub 301-redirects old URLs (web, clone,
+   API), so existing clones and old README links keep resolving.
+2. **Internal identifiers — the name lives in ~6 places** (Pattern B layout):
+   `.claude-plugin/marketplace.json` (BOTH the owner-prefixed `name` AND `plugins[0].name` +
+   `plugins[0].source`), the `plugins/<name>/` dir and nested `skills/<name>/` dir (`git mv`),
+   `plugin.json` (`name` + `repository`), `package.json`, the tests' `PLUGIN` constant, and the
+   README (title, badges, install strings, prose). A blanket `sed s/old/new/g` over those files
+   plus two `git mv` covers it; then `grep -r old-name .` must return NOTHING before commit.
+3. **MAJOR version bump** — the install string changes (`/plugin install <new>@<owner>-<new>`),
+   which is breaking for existing installs. Bump plugin.json + marketplace.json + package.json +
+   SKILL.md frontmatter together (the Step 5c manifest-consistency tests enforce agreement — run
+   them), push, cut a release titled "renamed to <new>" carrying the new install string, and
+   `gh repo edit --description` to lead with the new name.
+4. **README breadcrumb**: one italic line — *Formerly `<old>` — old GitHub links redirect here.*
+5. **Local skill**: `mv ~/.claude/skills/<old> ~/.claude/skills/<new>`, update frontmatter
+   `name:`, append a rename note; the session catalog picks the new name up immediately.
+6. **Cross-reference sweep — grep BOTH separator variants**: `grep -r "old-name"` AND
+   `grep -r "old_name"` across `~/.claude` — memory-file slugs use underscores, so a hyphen-only
+   grep silently misses MEMORY.md index lines. Update active skills/memories with
+   "`<new>` (formerly <old>)" where version-pinned references matter; leave archives/`*.bak`
+   untouched; NEVER rewrite verbatim human quotes that contain the old name — annotate after the
+   quote instead ("(that tool is now named <new>)").
 
 ## Phase Numbering in SKILL.md Workflows
 

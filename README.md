@@ -211,6 +211,10 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 
 | Version | Date | Changes |
 |---|---|---|
+| 2.3.0 | 2026-07-17 | Add "Renaming a Published Skill" variant (repo rename → identifier sweep → major bump → dual-separator cross-ref grep) + Pattern-B manifest-test gotcha note |
+| 2.2.0 | 2026-06-01 | Sync accumulated local SKILL.md updates |
+| 2.1.0 | 2026-04-07 | Extend description triggers to semantic-match plugin-install failure errors |
+| 2.0.0 | 2026-04-07 | BREAKING: canonical `plugins/<name>/` layout, `marketplace.json` inside `.claude-plugin/` |
 | 1.6.0 | 2026-03-31 | Add "update SKILL.md first" lesson after metadata-only version bump missed the skill itself |
 | 1.5.0 | 2026-03-31 | Expand eval suite: 35→45 triggers, 6→12 test cases, 8→16 edge cases; strengthen assertions on existing tests |
 | 1.4.0 | 2026-03-24 | Enrich trigger description, add eval suite, add composability metadata |
