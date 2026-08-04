@@ -34,7 +34,7 @@ Turn a local Claude Code skill into a polished, adoptable open-source GitHub rep
 Also use for diagnosing a **broken install on an already-published skill**. The
 frontmatter description carries a compressed set of these symptoms; the full
 vocabulary lives here, because the description is capped (see
-"Step 1.5: Check the description against the listing cap"):
+"Description Cap Gate"):
 
 - "my plugin install is failing" / "debug plugin install" / "why can't I install my own skill?"
 - "claude plugin marketplace add is silently failing" / "marketplace add appears to work but install fails"
@@ -92,7 +92,11 @@ Find the SKILL.md to publish:
 
 Read the frontmatter to extract: name, description, version, author.
 
-## Step 1.5: Check the description against the listing cap (REQUIRED)
+## Description Cap Gate (REQUIRED)
+
+Runs after Step 1 (the skill is located) and before Step 2 (the repo is built).
+Named rather than numbered on purpose — see "Phase Numbering in SKILL.md Workflows"
+below, which forbids decimal sub-phases.
 
 Claude Code injects every model-invocable skill's `name` + `description` into context
 on **every turn**, capped per skill by `skillListingMaxDescChars` (default **1536**).
@@ -108,12 +112,23 @@ nothing reports the loss. Publishing a 2,400-char description does not give you 
 2,400-char description; it gives you a 1,535-char one chosen by character position
 instead of by you.
 
-Run the gate before packaging:
+Run the gate before packaging. **The gate ships inside this plugin** at
+`scripts/check_skill_descriptions.py`, next to this SKILL.md — resolve it through
+`CLAUDE_PLUGIN_ROOT`, which Claude Code exports as the plugin's install directory:
 
 ```bash
-python3 scripts/check_skill_descriptions.py . --triggers
+GATE="$CLAUDE_PLUGIN_ROOT/scripts/check_skill_descriptions.py"
+# Fallback for a bare ~/.claude/skills/ copy, where CLAUDE_PLUGIN_ROOT is unset:
+[ -f "$GATE" ] || GATE="$(find "$HOME/.claude" -name check_skill_descriptions.py -print -quit 2>/dev/null)"
+
+python3 "$GATE" . --no-color --triggers   # `.` = the skill repo being published
 # exit 0 = clean · 1 = over cap · 2 = bad path
 ```
+
+`python3` is REQUIRED here (see Dependencies). If it is missing, install it and
+re-run — do **not** skip the step. Skipping produces a green publish over a
+description the model can only half-read, which is the exact failure this gate exists
+to catch.
 
 If it fails:
 
@@ -132,6 +147,10 @@ If it fails:
    A trim that raises positive coverage by adding generic words also raises false
    firing.
 6. **Leave 30–50 chars of headroom.** Landing at cap−2 is one edit away from breaking.
+
+Running the gate once is not enough — the description drifts back over the cap on the
+next feature commit. Step 5c vendors this same gate into the repo you are publishing
+and wires it into that repo's tests and CI, so the check keeps running after you leave.
 
 ## Step 2: Create Repo Structure
 
@@ -598,17 +617,56 @@ issues before they reach users. Tests run on every push via GitHub Actions.
 - `tests/manifest-consistency.test.mjs` — cross-validates plugin.json, SKILL.md, eval-suite versions/names
 - `tests/eval-suite-integrity.test.mjs` — validates structure, regex compilation, ID uniqueness, trigger balance
 - `tests/trigger-classification.test.mjs` — validates trigger entries and skill name references
-- `.github/workflows/test.yml` — CI pipeline (Node.js 20+22 matrix)
+- `tests/skill-description-cap.test.mjs` — runs the description-cap gate over the repo (cap, lost triggers, shared listing budget, ≥20 chars headroom)
+- `plugins/<name>/scripts/check_skill_descriptions.py` — the gate itself, vendored **inside the plugin source dir** so installed users get it too (see below)
+- `.github/workflows/test.yml` — CI pipeline (Node.js 20+22 matrix **plus a Python step for the gate**)
 - `package.json` (if not present) — minimal, with `"test": "node --test tests/*.test.mjs"`
 
-**Templates location:** `~/Documents/skill-test-templates/` (generalized from agent-review-panel's 363-test suite)
+**Templates location:** `~/Documents/skill-test-templates/` (generalized from agent-review-panel's 363-test suite).
+The description-cap gate is vendored from
+[wan-huiyan/context-police](https://github.com/wan-huiyan/context-police) `scripts/check_skill_descriptions.py`;
+keep its upstream provenance note in the docstring, and re-vendor from upstream rather than editing locally.
 
 **Process:**
-1. Copy the 3 test templates from `~/Documents/skill-test-templates/` into the repo's `tests/` directory
-2. Copy `test.yml` into `.github/workflows/`
-3. Generate `package.json` if missing (parameterized from plugin.json name/version/description)
-4. Run `npm test` to verify all tests pass
-5. If tests fail, fix the underlying issues (version mismatches, invalid regexes, duplicate IDs) before proceeding
+1. Copy the 4 test templates from `~/Documents/skill-test-templates/` into the repo's `tests/` directory
+2. Copy `check_skill_descriptions.py` into `plugins/<plugin-name>/scripts/` — **not** repo-root `scripts/`
+3. Copy `test.yml` into `.github/workflows/`
+4. Generate `package.json` if missing (parameterized from plugin.json name/version/description)
+5. Run `npm test` to verify all tests pass
+6. If tests fail, fix the underlying issues (version mismatches, invalid regexes, duplicate IDs, an over-cap description) before proceeding
+
+**⚠️ Vendor executables INSIDE the plugin source dir.** `marketplace.json` ships only what
+lives under the declared `source` (`./plugins/<name>`). A script at repo-root `scripts/`
+is in the git repo but **absent from every install** — a REQUIRED step that references it
+is unrunnable for everyone who installed the plugin rather than cloning it. Put it at
+`plugins/<name>/scripts/` and reference it as `$CLAUDE_PLUGIN_ROOT/scripts/<file>`. Verify
+by copying `plugins/<name>/` alone to a temp dir and running the command against it — if it
+resolves there, it resolves for an installed user. Assert the invariant in the test suite:
+
+```js
+// Anything a REQUIRED step shells out to must live under the marketplace source path
+const src = marketplace.plugins[0].source.replace(/^\.\//, "");
+assert.ok(existsSync(resolve(ROOT, src, "scripts/check_skill_descriptions.py")),
+  `gate must ship inside ${src}/ — repo-root scripts/ is not installed`);
+```
+
+The Python gate needs its own CI step, not just the Node runner, so it reports red/green
+independently:
+
+```yaml
+      # The skill-description gate is Python. Pin it so the Node test that shells
+      # out to it can never silently skip.
+      - name: Use Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Skill description cap gate
+        run: python3 plugins/<name>/scripts/check_skill_descriptions.py . --no-color --triggers
+```
+
+`skill-description-cap.test.mjs` must **fail, not skip**, when `python3` is missing — same
+assertive-check rule as below.
 
 **Or use the backfill script:** `~/Documents/skill-test-templates/backfill.sh /path/to/repo`
 
@@ -620,7 +678,9 @@ issues before they reach users. Tests run on every push via GitHub Actions.
 > wan-huiyan/promptback `tests/manifest-consistency.test.mjs` (15 assertions incl.
 > source-path shape, owner-prefixed marketplace name, no stale root SKILL.md, README screenshot pins).
 
-**Skills WITHOUT eval-suite.json:** Only manifest-consistency tests are generated. eval-suite and trigger tests skip gracefully.
+**Skills WITHOUT eval-suite.json:** Only manifest-consistency and skill-description-cap tests
+are generated. eval-suite and trigger tests skip gracefully. The description-cap test does
+**not** — every skill has a description, so the gate always applies.
 
 After generating, add a Tests badge to the README:
 ```markdown
@@ -937,12 +997,24 @@ and (optionally) the awesome-claude-skills PR URL.
 - Requires `git` (any version) for repo creation and pushing
 - Requires `gh` CLI (GitHub CLI) for `gh repo create`, `gh api`, and PR creation. If `gh` is not
   available, fall back to manual GitHub workflow instructions
+- **Requires `python3` (3.8+, stdlib only) for the REQUIRED Description Cap Gate.** The gate ships
+  with this plugin at `$CLAUDE_PLUGIN_ROOT/scripts/check_skill_descriptions.py`. This step does
+  **not** degrade gracefully: there is no way to measure a description against the 1,536-char
+  listing cap without running it, and skipping it publishes a description the model can only
+  half-read while every check reports green. If `python3` is missing, install it (`brew install
+  python3` / `apt install python3`) and re-run the gate before packaging. Report the gate as
+  BLOCKED, never as passed.
 - Optionally depends on `npm` + `puppeteer` for screenshot generation (skip gracefully if unavailable)
+- Optionally depends on `npm` for running the generated `node:test` suite (Step 5c)
 - Compatible with Claude Code v1.0+ and works with Cursor 2.4+ via `.cursor/rules/` copy
 
 ### Error Handling
 
 - If SKILL.md is not found at the target path, report the error and ask for the correct path
+- If `python3` is missing or the gate script cannot be resolved, STOP and report the Description
+  Cap Gate as BLOCKED. Do not continue to Step 2 and do not report the publish as clean
+- If the gate exits 1 (over cap), trim per the six rules in the Description Cap Gate section and
+  re-run until it exits 0. Exit 2 means the path argument is wrong, not that the repo is clean
 - If `gh` CLI fails (auth, network), provide manual git + GitHub web UI fallback instructions
 - If puppeteer screenshot generation fails, skip screenshots and note the gap in the README
 - If the GitHub repo already exists, detect and offer update flow instead of failing on create

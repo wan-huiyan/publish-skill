@@ -12,8 +12,8 @@ Step 0: Client Data Audit     → Scan for company names, amounts, field names i
 Step 1: Repo Structure         → .claude-plugin packaging, skills/ directory, LICENSE
                                 (MIT — with independent rationale, not self-referential)
 
-Step 1.5: Description Gate     → SKILL.md description vs the 1,536-char skill-listing cap.
-                                Over the cap, trigger phrases are silently truncated away
+Description Cap Gate           → SKILL.md description vs the 1,536-char skill-listing cap.
+  (REQUIRED, between 1 and 2)   Over the cap, trigger phrases are silently truncated away
 
 Step 2: Write README           → 16-section template: screenshots, installation, limitations,
                                 version history. Pitfalls in strategic-then-implementation order
@@ -195,15 +195,22 @@ The skill includes a comprehensive evaluation suite (`eval-suite.json`) with **4
 
 `npm test` runs 266 assertions across four suites — manifest consistency,
 eval-suite integrity, trigger classification, and the **skill-description cap
-gate**. The gate (`scripts/check_skill_descriptions.py`, vendored from
-[context-police](https://github.com/wan-huiyan/context-police)) fails the build
-if any SKILL.md description exceeds Claude Code's 1,536-char skill-listing cap
-or loses a quoted trigger phrase to truncation. It also runs as its own CI step
-so it can never silently skip.
+gate**. The gate (`plugins/publish-skill/scripts/check_skill_descriptions.py`,
+vendored from [context-police](https://github.com/wan-huiyan/context-police))
+fails the build if any SKILL.md description exceeds Claude Code's 1,536-char
+skill-listing cap or loses a quoted trigger phrase to truncation. It also runs as
+its own CI step so it can never silently skip.
+
+It lives **inside the plugin source dir**, not at repo-root `scripts/`, because
+`marketplace.json` ships only what is under `source: ./plugins/publish-skill`. The
+skill's REQUIRED Description Cap Gate step resolves it as
+`$CLAUDE_PLUGIN_ROOT/scripts/check_skill_descriptions.py`, so it is runnable for
+installed users and not just for people who cloned the repo. A test asserts that
+invariant against `marketplace.json`.
 
 ```bash
 npm test
-python3 scripts/check_skill_descriptions.py . --triggers
+python3 plugins/publish-skill/scripts/check_skill_descriptions.py . --triggers
 ```
 
 ## Related Skills
@@ -230,7 +237,7 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 
 | Version | Date | Changes |
 |---|---|---|
-| 2.4.0 | 2026-08-04 | Trim the frontmatter description from 2,385 → 1,489 chars (was 849 over the 1,536-char skill-listing cap, silently truncated mid-word); restore the `Do NOT use for` precision list to the visible region; add Step 1.5 description-cap gate + vendored `scripts/check_skill_descriptions.py` wired into tests and CI |
+| 2.4.0 | 2026-08-04 | Trim the frontmatter description from 2,385 → 1,489 chars (was 849 over the 1,536-char skill-listing cap, silently truncated mid-word); restore the `Do NOT use for` precision list to the visible region; add the REQUIRED **Description Cap Gate** stage + the vendored gate at `plugins/publish-skill/scripts/check_skill_descriptions.py` (inside the shipped plugin source dir, resolved via `$CLAUDE_PLUGIN_ROOT`), wired into tests and CI, propagated to generated repos by Step 5c, and declared as a `python3` dependency |
 | 2.3.0 | 2026-07-17 | Add "Renaming a Published Skill" variant (repo rename → identifier sweep → major bump → dual-separator cross-ref grep) + Pattern-B manifest-test gotcha note |
 | 2.2.0 | 2026-06-01 | Sync accumulated local SKILL.md updates |
 | 2.1.0 | 2026-04-07 | Extend description triggers to semantic-match plugin-install failure errors |

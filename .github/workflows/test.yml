@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
 
       - name: Skill description cap gate
-        run: python3 scripts/check_skill_descriptions.py . --no-color --triggers
+        run: python3 plugins/publish-skill/scripts/check_skill_descriptions.py . --no-color --triggers
 
       - name: Run tests
         run: npm test
