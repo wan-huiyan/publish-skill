@@ -21,5 +21,15 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      # The skill-description gate is Python. Pin it so the Node test that shells
+      # out to it can never silently skip.
+      - name: Use Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Skill description cap gate
+        run: python3 scripts/check_skill_descriptions.py . --no-color --triggers
+
       - name: Run tests
         run: npm test

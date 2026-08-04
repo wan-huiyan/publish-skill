@@ -1,35 +1,23 @@
 ---
 name: publish-skill
-version: 2.3.0
+version: 2.4.0
 description: |
-  Publish a Claude Code skill to GitHub as a polished, adoptable open-source repo, AND
-  diagnose `claude plugin install` failures on a published skill. Use when the user says
-  "publish this skill", "put this on GitHub", "share this skill", "release this skill publicly",
-  "open source my skill", "make this skill installable", "create a GitHub repo for my skill",
-  "package this skill for the marketplace", or wants to update an existing published skill
-  repo. Also trigger when the user says "submit to awesome-claude-skills", "add my skill to
-  the awesome list", "how do I let others install my skill?", "I finished my skill, now what?",
-  "push my skill to a public repo", "generate a README and publish", "bump the version and
-  republish", "rename a published skill" / "rename my skill repo", or "turn my local skill into a polished repo".
-  ALSO trigger on `claude plugin install` failures and diagnostic questions: `Plugin X not
-  found in any configured marketplace`, `Plugin X not found in marketplace Y`, `Invalid
-  schema: plugins.0.source: Invalid input`, `Failed to add marketplace: Failed to parse
-  marketplace file`, "my plugin install is failing", "why can't I install my own skill?",
-  "claude plugin marketplace add is silently failing", "plugin not found in marketplace",
-  "marketplace add appears to work but install fails", "debug plugin install", "wrong
-  marketplace.json path", "wrong plugin source field". The Common failure modes section
-  (Step 2.5) documents the three bug layers (deprecated command, wrong manifest path, wrong
-  source path) with symptoms, diagnoses, and fixes that apply to BOTH new publishes and
-  already-published broken skills.
-  Covers: canonical `plugins/<name>/` subdirectory layout (v2.0.0+), `.claude-plugin/marketplace.json`
-  packaging, README generation with demo screenshots via puppeteer, multi-agent review panel
-  for README quality, research verification of thresholds/claims, visual distinction of
-  grounded vs heuristic thresholds, GitHub repo metadata (description, topics), PR submission
-  to awesome-claude-skills, PDF output for HTML-generating skills, and end-to-end install
-  flow verification before publishing.
-  Do NOT use for creating new skills from scratch (use skill-creator instead), improving
-  skill trigger accuracy or quality (use schliff instead), general code deployment,
-  writing READMEs for non-skill projects, or non-skill package management.
+  Publish a Claude Code skill to GitHub as a polished, open-source repo, AND diagnose `claude plugin
+  install` failures on a published skill. Use when the user says "publish this skill", "put this on
+  GitHub", "share this skill with my team", "release this skill publicly", "open source my skill",
+  "make this skill installable by other users", "create a GitHub repo for my skill", "package this
+  skill for the marketplace", "submit to awesome-claude-skills", "add my skill to the awesome list",
+  "how do I let others install my skill?", "I finished my skill, now what?", "push my skill to a
+  public repo", "generate a README and publish", "bump the version and republish", "rename a
+  published skill repo", or "turn my local skill into a polished repo", or wants to update a
+  published repo. Also on install failures: `Plugin X not found in marketplace Y`, `Invalid schema:
+  plugins.0.source`, `Failed to parse marketplace file`, "my plugin install is failing", "why can't
+  I install my own skill?", "marketplace add works but install fails", "debug plugin install",
+  "wrong marketplace.json path or source field". Covers `plugins/<name>/` layout, plugin.json +
+  marketplace.json packaging, README/LICENSE and demo screenshots, awesome-claude-skills PR
+  submission, and end-to-end install verification. Do NOT use for creating new skills from scratch
+  (use skill-creator), improving a skill's triggers or quality (use schliff), general code
+  deployment, non-skill READMEs, or non-skill package management.
 ---
 
 # Publish Skill to GitHub
@@ -41,6 +29,25 @@ Turn a local Claude Code skill into a polished, adoptable open-source GitHub rep
 - User says "publish this skill", "share this skill", "put this on GitHub"
 - User wants to update an already-published skill repo
 - User asks to submit a skill to awesome-claude-skills or a marketplace
+- User wants to rename a published skill / "rename my skill repo"
+
+Also use for diagnosing a **broken install on an already-published skill**. The
+frontmatter description carries a compressed set of these symptoms; the full
+vocabulary lives here, because the description is capped (see
+"Step 1.5: Check the description against the listing cap"):
+
+- "my plugin install is failing" / "debug plugin install" / "why can't I install my own skill?"
+- "claude plugin marketplace add is silently failing" / "marketplace add appears to work but install fails"
+- "plugin not found in marketplace" / "wrong marketplace.json path" / "wrong plugin source field"
+- `Plugin "X" not found in any configured marketplace`
+- `Plugin "X" not found in marketplace "Y"`
+- `Invalid schema: plugins.0.source: Invalid input`
+- `Failed to add marketplace: Failed to parse marketplace file`
+
+The **Common failure modes** section (Step 2.5) documents the three bug layers
+(deprecated command, wrong manifest path, wrong source path) with symptoms,
+diagnoses, and fixes that apply to BOTH new publishes and already-published
+broken skills.
 
 ## Companion Skills (optional, recommended)
 
@@ -84,6 +91,47 @@ Find the SKILL.md to publish:
 ```
 
 Read the frontmatter to extract: name, description, version, author.
+
+## Step 1.5: Check the description against the listing cap (REQUIRED)
+
+Claude Code injects every model-invocable skill's `name` + `description` into context
+on **every turn**, capped per skill by `skillListingMaxDescChars` (default **1536**).
+Over the cap the harness keeps `full[:1535]` and appends an ellipsis. It does **not**
+truncate intelligently — it cuts mid-word.
+
+The listing entry is measured as `len(name) + 4 + len(description [+ " - " + whenToUse])`.
+`description` and `whenToUse` are joined with `" - "` and share ONE cap.
+
+**Why this matters more than it looks:** a description IS trigger text. Every
+`"..."` phrase past char 1535 is already dead — the skill cannot fire on it, and
+nothing reports the loss. Publishing a 2,400-char description does not give you a
+2,400-char description; it gives you a 1,535-char one chosen by character position
+instead of by you.
+
+Run the gate before packaging:
+
+```bash
+python3 scripts/check_skill_descriptions.py . --triggers
+# exit 0 = clean · 1 = over cap · 2 = bad path
+```
+
+If it fails:
+
+1. **Compress synonym runs, do not delete concepts.** Ten literal synonyms for one
+   concept is waste; two or three representative ones generalize fine. Keep every
+   DISTINCT concept.
+2. **Cut prose, not trigger vocabulary.** Implementation detail ("documents the three
+   bug layers with symptoms and fixes") belongs in the body. The description's only
+   job is to make the model reach for the skill.
+3. **Keep the NOT-for list.** It is precision — it stops false firing. It is also
+   almost always the first thing truncation eats, because it sits at the end.
+4. **Measure, do not assume.** With an `eval-suite.json`, compute word-overlap
+   coverage of each positive prompt against `old_description[:1535]` (what the model
+   ACTUALLY saw) — not the full old source, which includes text nobody read.
+5. **Track separation, not just positive coverage.** Also score the NEGATIVE prompts.
+   A trim that raises positive coverage by adding generic words also raises false
+   firing.
+6. **Leave 30–50 chars of headroom.** Landing at cap−2 is one edit away from breaking.
 
 ## Step 2: Create Repo Structure
 

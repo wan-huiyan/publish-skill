@@ -12,6 +12,9 @@ Step 0: Client Data Audit     → Scan for company names, amounts, field names i
 Step 1: Repo Structure         → .claude-plugin packaging, skills/ directory, LICENSE
                                 (MIT — with independent rationale, not self-referential)
 
+Step 1.5: Description Gate     → SKILL.md description vs the 1,536-char skill-listing cap.
+                                Over the cap, trigger phrases are silently truncated away
+
 Step 2: Write README           → 16-section template: screenshots, installation, limitations,
                                 version history. Pitfalls in strategic-then-implementation order
 
@@ -57,6 +60,7 @@ These rules were learned from real incidents during publishing:
 | Fork contributors can't set topics | `gh repo edit --add-topic` requires admin access — suggest topics in PR description instead |
 | Multi-section screenshots beat single hero | For rich output skills, 2–4 focused section screenshots show variety better than one long image |
 | Don't cite your own skill as authority | "MIT because publish-skill says so" is circular — justify recommendations with independent reasoning |
+| A long description is not a rich description | This repo's own description hit 2,385 chars against a 1,536-char skill-listing cap. The 849 overflow chars — the whole `Covers:` list and the entire `Do NOT use for` precision list — were written on every turn and thrown away unread. v2.1.0's commit message said "extend triggers"; every char it added past 1535 delivered nothing. Gate the description in CI |
 | Update SKILL.md FIRST, metadata second | Updated eval-suite, README, plugin.json, and marketplace.json to v1.5 — but forgot to add a version field to SKILL.md itself. The skill content is the primary artifact; metadata files follow it, not the other way around |
 
 ## Example: What the Skill Produces
@@ -187,6 +191,21 @@ The skill includes a comprehensive evaluation suite (`eval-suite.json`) with **4
 | `puppeteer_not_available` | missing_deps |
 </details>
 
+### Repo tests
+
+`npm test` runs 266 assertions across four suites — manifest consistency,
+eval-suite integrity, trigger classification, and the **skill-description cap
+gate**. The gate (`scripts/check_skill_descriptions.py`, vendored from
+[context-police](https://github.com/wan-huiyan/context-police)) fails the build
+if any SKILL.md description exceeds Claude Code's 1,536-char skill-listing cap
+or loses a quoted trigger phrase to truncation. It also runs as its own CI step
+so it can never silently skip.
+
+```bash
+npm test
+python3 scripts/check_skill_descriptions.py . --triggers
+```
+
 ## Related Skills
 
 - [skill-creator](https://docs.anthropic.com/en/docs/claude-code/skills) — for creating skills from scratch
@@ -211,6 +230,7 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 
 | Version | Date | Changes |
 |---|---|---|
+| 2.4.0 | 2026-08-04 | Trim the frontmatter description from 2,385 → 1,489 chars (was 849 over the 1,536-char skill-listing cap, silently truncated mid-word); restore the `Do NOT use for` precision list to the visible region; add Step 1.5 description-cap gate + vendored `scripts/check_skill_descriptions.py` wired into tests and CI |
 | 2.3.0 | 2026-07-17 | Add "Renaming a Published Skill" variant (repo rename → identifier sweep → major bump → dual-separator cross-ref grep) + Pattern-B manifest-test gotcha note |
 | 2.2.0 | 2026-06-01 | Sync accumulated local SKILL.md updates |
 | 2.1.0 | 2026-04-07 | Extend description triggers to semantic-match plugin-install failure errors |
