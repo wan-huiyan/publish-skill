@@ -2,7 +2,7 @@
 name: publish-skill
 version: 2.4.0
 description: |
-  Publish a Claude Code skill to GitHub as a polished, open-source repo, AND diagnose `claude plugin
+  Publish a Claude Code skill to GitHub as a polished open-source repo, AND diagnose `claude plugin
   install` failures on a published skill. Use when the user says "publish this skill", "put this on
   GitHub", "share this skill with my team", "release this skill publicly", "open source my skill",
   "make this skill installable by other users", "create a GitHub repo for my skill", "package this
@@ -11,12 +11,12 @@ description: |
   public repo", "generate a README and publish", "bump the version and republish", "rename a
   published skill repo", or "turn my local skill into a polished repo", or wants to update a
   published repo. Also on install failures: `Plugin X not found in marketplace Y`, `Invalid schema:
-  plugins.0.source`, `Failed to parse marketplace file`, "my plugin install is failing", "why can't
-  I install my own skill?", "marketplace add works but install fails", "debug plugin install",
-  "wrong marketplace.json path or source field". Covers `plugins/<name>/` layout, plugin.json +
-  marketplace.json packaging, README/LICENSE and demo screenshots, awesome-claude-skills PR
-  submission, and end-to-end install verification. Do NOT use for creating new skills from scratch
-  (use skill-creator), improving a skill's triggers or quality (use schliff), general code
+  plugins.0.source: Invalid input`, `Failed to parse marketplace file`, "my plugin install is
+  silently failing", "why can't I install my own skill?", "marketplace add works but install fails",
+  "debug plugin install", "wrong marketplace.json path or source field". Covers `plugins/<name>/`
+  layout, plugin.json/marketplace.json packaging, README/LICENSE, screenshots, repo topics, PDF
+  output, awesome-list PR submission, install verification. Do NOT use for creating new skills from
+  scratch (use skill-creator), improving a skill's triggers or quality (use schliff), general code
   deployment, non-skill READMEs, or non-skill package management.
 ---
 
@@ -39,12 +39,16 @@ vocabulary lives here, because the description is capped (see
 - "my plugin install is failing" / "debug plugin install" / "why can't I install my own skill?"
 - "claude plugin marketplace add is silently failing" / "marketplace add appears to work but install fails"
 - "plugin not found in marketplace" / "wrong marketplace.json path" / "wrong plugin source field"
-- `Plugin "X" not found in any configured marketplace`
-- `Plugin "X" not found in marketplace "Y"`
+- `Plugin "X" not found in any configured marketplace` / `Plugin X not found in any configured marketplace`
+- `Plugin "X" not found in marketplace "Y"` / `Plugin X not found in marketplace Y`
 - `Invalid schema: plugins.0.source: Invalid input`
 - `Failed to add marketplace: Failed to parse marketplace file`
 
-The **Common failure modes** section (Step 2.5) documents the three bug layers
+(Both the quoted and unquoted renderings are listed on purpose: the pre-v2.4.0
+description carried the unquoted form, so keeping only the quoted one would have
+silently dropped the exact string some users paste.)
+
+The **Common failure modes** section (under Step 2) documents the three bug layers
 (deprecated command, wrong manifest path, wrong source path) with symptoms,
 diagnoses, and fixes that apply to BOTH new publishes and already-published
 broken skills.
@@ -122,8 +126,15 @@ GATE="$CLAUDE_PLUGIN_ROOT/scripts/check_skill_descriptions.py"
 [ -f "$GATE" ] || GATE="$(find "$HOME/.claude" -name check_skill_descriptions.py -print -quit 2>/dev/null)"
 
 python3 "$GATE" . --no-color --triggers   # `.` = the skill repo being published
-# exit 0 = clean · 1 = over cap · 2 = bad path
+# exit 0 = clean · 1 = over cap OR line-wrap corruption · 2 = bad path
 ```
+
+**`BROKEN BY LINE-WRAP` is a separate failure from `OVER CAP`, and the char count
+cannot see it.** `description: >` and `description: |` join their lines with a
+SPACE, and `textwrap.wrap()` breaks on hyphens by default, so re-wrapping a trimmed
+description silently turns `token-efficient` into `token- efficient` in the text the
+harness actually injects. The length is unchanged, so no cap check fires. Re-wrap
+with `break_on_hyphens=False` and re-run the gate until that section is empty.
 
 `python3` is REQUIRED here (see Dependencies). If it is missing, install it and
 re-run — do **not** skip the step. Skipping produces a green publish over a
@@ -140,17 +151,37 @@ If it fails:
    job is to make the model reach for the skill.
 3. **Keep the NOT-for list.** It is precision — it stops false firing. It is also
    almost always the first thing truncation eats, because it sits at the end.
-4. **Measure, do not assume.** With an `eval-suite.json`, compute word-overlap
-   coverage of each positive prompt against `old_description[:1535]` (what the model
-   ACTUALLY saw) — not the full old source, which includes text nobody read.
-5. **Track separation, not just positive coverage.** Also score the NEGATIVE prompts.
-   A trim that raises positive coverage by adding generic words also raises false
-   firing.
-6. **Leave 30–50 chars of headroom.** Landing at cap−2 is one edit away from breaking.
+4. **Measure with a committed harness, do not assume.** With an `eval-suite.json`, run
+   the scorer that ships next to the gate — never a throwaway one-off, because a
+   coverage figure a reviewer cannot re-run is not evidence:
+   ```bash
+   python3 "$(dirname "$GATE")/score_trigger_coverage.py" \
+     --old main:<path/SKILL.md> --new <path/SKILL.md> --eval eval-suite.json
+   ```
+   The baseline is `old_description[:1535]` (what the model ACTUALLY saw), not the full
+   old source, which includes text nobody read.
+5. **Track separation, not just positive coverage.** The scorer also scores the NEGATIVE
+   prompts. A trim that raises positive coverage by adding generic words also raises
+   false firing. `--strip-not-list` gives the pessimistic reading: word overlap counts a
+   restored `Do NOT use for ...` clause as evidence FOR the excluded topics.
+6. **Diff the trigger surface, not just the word set.** Word overlap is blind to a
+   trigger that gained a precondition — the word set is identical. Run
+   `python3 "$GATE" --compare main:<path/SKILL.md> <path/SKILL.md>` and read every
+   `DROPPED` / `NARROWED` / `REWORDED` row by hand. Do not clear them with a metric.
+7. **Leave 30–50 chars of headroom.** Landing at cap−2 is one edit away from breaking.
+
+**Under the cap is NOT the same as visible.** The per-skill cap is only the first
+gate. `skillListingBudgetFraction` (default 0.01) sizes a SHARED listing budget at
+`context × 4 × 0.01` chars across every model-invocable skill; when the total
+overflows, the harness collapses whichever entries no longer fit down to bare names,
+ranked by usage rather than by length. Clearing the cap means "no longer truncated
+mid-word", not "guaranteed to be read". Check the budget line the gate prints, and
+remember it moves with whatever else the user has installed.
 
 Running the gate once is not enough — the description drifts back over the cap on the
-next feature commit. Step 5c vendors this same gate into the repo you are publishing
-and wires it into that repo's tests and CI, so the check keeps running after you leave.
+next feature commit. Step 5c vendors this same gate — and this same scorer — into the
+repo you are publishing and wires the gate into that repo's tests and CI, so the check
+keeps running after you leave.
 
 ## Step 2: Create Repo Structure
 
@@ -283,7 +314,7 @@ https://code.claude.com/docs/en/plugin-marketplaces):
 The two names are DIFFERENT. A common mistake is to make them identical or to assume the
 install command takes just the marketplace name — both fail.
 
-### Step 2.5: Verify the layout locally BEFORE pushing
+### Verify the layout locally BEFORE pushing (still Step 2)
 
 After creating the files, verify the install flow works locally before publishing. This
 catches all three layout bugs that cost 4+ PRs to debug in the wild:
@@ -617,23 +648,35 @@ issues before they reach users. Tests run on every push via GitHub Actions.
 - `tests/manifest-consistency.test.mjs` — cross-validates plugin.json, SKILL.md, eval-suite versions/names
 - `tests/eval-suite-integrity.test.mjs` — validates structure, regex compilation, ID uniqueness, trigger balance
 - `tests/trigger-classification.test.mjs` — validates trigger entries and skill name references
-- `tests/skill-description-cap.test.mjs` — runs the description-cap gate over the repo (cap, lost triggers, shared listing budget, ≥20 chars headroom)
+- `tests/skill-description-cap.test.mjs` — runs the description-cap gate over the repo (cap, lost triggers, line-wrap corruption, shared listing budget, ≥20 chars headroom) and asserts the vendored gate is not a stale fork
 - `plugins/<name>/scripts/check_skill_descriptions.py` — the gate itself, vendored **inside the plugin source dir** so installed users get it too (see below)
+- `plugins/<name>/scripts/score_trigger_coverage.py` — the coverage harness, so any coverage figure the PR quotes can be re-run by a reviewer
 - `.github/workflows/test.yml` — CI pipeline (Node.js 20+22 matrix **plus a Python step for the gate**)
 - `package.json` (if not present) — minimal, with `"test": "node --test tests/*.test.mjs"`
 
-**Templates location:** `~/Documents/skill-test-templates/` (generalized from agent-review-panel's 363-test suite).
-The description-cap gate is vendored from
-[wan-huiyan/context-police](https://github.com/wan-huiyan/context-police) `scripts/check_skill_descriptions.py`;
-keep its upstream provenance note in the docstring, and re-vendor from upstream rather than editing locally.
+**Where the sources come from.** There is no single templates directory that holds all
+four test files, so do not go looking for one:
+
+| file | source of truth |
+|---|---|
+| `manifest-consistency.test.mjs`, `eval-suite-integrity.test.mjs`, `trigger-classification.test.mjs` | `~/Documents/skill-test-templates/` if that directory exists on this machine; otherwise copy them from a published repo that already has them (this repo's own `tests/`, or wan-huiyan/promptback for the Pattern-B variants) |
+| `skill-description-cap.test.mjs` | **this repo's `tests/skill-description-cap.test.mjs`** — it is the reference implementation; no template for it exists in `skill-test-templates/` |
+| `check_skill_descriptions.py` | [wan-huiyan/context-police](https://github.com/wan-huiyan/context-police) `scripts/check_skill_descriptions.py` |
+| `score_trigger_coverage.py` | [wan-huiyan/agent-review-panel](https://github.com/wan-huiyan/agent-review-panel) `scripts/score_trigger_coverage.py` |
+
+Check the path before relying on it (`ls ~/Documents/skill-test-templates/`) rather than
+assuming it is present — it is a local authoring convenience, not part of any install.
+Keep the upstream provenance note in each vendored script's docstring, and re-vendor from
+upstream rather than editing locally.
 
 **Process:**
-1. Copy the 4 test templates from `~/Documents/skill-test-templates/` into the repo's `tests/` directory
-2. Copy `check_skill_descriptions.py` into `plugins/<plugin-name>/scripts/` — **not** repo-root `scripts/`
-3. Copy `test.yml` into `.github/workflows/`
-4. Generate `package.json` if missing (parameterized from plugin.json name/version/description)
-5. Run `npm test` to verify all tests pass
-6. If tests fail, fix the underlying issues (version mismatches, invalid regexes, duplicate IDs, an over-cap description) before proceeding
+1. Copy the three manifest/eval/trigger test templates into the repo's `tests/` directory, from whichever source above is actually available
+2. Copy `skill-description-cap.test.mjs` from this repo's `tests/` and adjust `PLUGIN_SOURCE` if the target uses a different layout
+3. Copy `check_skill_descriptions.py` and `score_trigger_coverage.py` into `plugins/<plugin-name>/scripts/` — **not** repo-root `scripts/`
+4. Copy `test.yml` into `.github/workflows/`
+5. Generate `package.json` if missing (parameterized from plugin.json name/version/description)
+6. Run `npm test` to verify all tests pass
+7. If tests fail, fix the underlying issues (version mismatches, invalid regexes, duplicate IDs, an over-cap description, a line-wrap-corrupted description) before proceeding
 
 **⚠️ Vendor executables INSIDE the plugin source dir.** `marketplace.json` ships only what
 lives under the declared `source` (`./plugins/<name>`). A script at repo-root `scripts/`
@@ -668,7 +711,9 @@ independently:
 `skill-description-cap.test.mjs` must **fail, not skip**, when `python3` is missing — same
 assertive-check rule as below.
 
-**Or use the backfill script:** `~/Documents/skill-test-templates/backfill.sh /path/to/repo`
+**Or, if `~/Documents/skill-test-templates/backfill.sh` exists on this machine:**
+`~/Documents/skill-test-templates/backfill.sh /path/to/repo` (it predates the
+description-cap test and does not generate it — add that one by hand either way).
 
 > **Pattern-B gotcha (2026-07-16):** `backfill.sh` and the stock `manifest-consistency.test.mjs`
 > template expect the LEGACY layout (`.claude-plugin/plugin.json` at the repo root) and fail on
@@ -701,8 +746,9 @@ assert.ok(
   `marketplace.json must exist at .claude-plugin/marketplace.json`
 );
 ```
-The graceful form masks the Layer 2 bug described in Step 2.5 — 160 tests pass green while
-the repo is actually broken for `claude plugin install`. Similarly, NEVER assert
+The graceful form masks the Layer 2 bug described under "Verify the layout locally BEFORE
+pushing" — 160 tests pass green while the repo is actually broken for `claude plugin
+install`. Similarly, NEVER assert
 `marketplace.name === plugin.name` — those are different by convention (marketplace is
 owner-prefixed). The real invariant is `marketplace.plugins[0].name === plugin.name`.
 
@@ -1013,8 +1059,10 @@ and (optionally) the awesome-claude-skills PR URL.
 - If SKILL.md is not found at the target path, report the error and ask for the correct path
 - If `python3` is missing or the gate script cannot be resolved, STOP and report the Description
   Cap Gate as BLOCKED. Do not continue to Step 2 and do not report the publish as clean
-- If the gate exits 1 (over cap), trim per the six rules in the Description Cap Gate section and
-  re-run until it exits 0. Exit 2 means the path argument is wrong, not that the repo is clean
+- If the gate exits 1, read WHICH section it printed. `OVER CAP` means trim per the seven rules in
+  the Description Cap Gate section; `BROKEN BY LINE-WRAP` means the description is the right length
+  but a hyphenated token is split across folded-scalar lines — re-wrap with `break_on_hyphens=False`.
+  Re-run until it exits 0. Exit 2 means the path argument is wrong, not that the repo is clean
 - If `gh` CLI fails (auth, network), provide manual git + GitHub web UI fallback instructions
 - If puppeteer screenshot generation fails, skip screenshots and note the gap in the README
 - If the GitHub repo already exists, detect and offer update flow instead of failing on create

@@ -19,7 +19,8 @@
  * source dir` below asserts that invariant.
  *
  * NOTE ON SKIPPING: this test deliberately FAILS rather than skips when python3
- * is unavailable. See the "Test-suite gotcha" in SKILL.md Step 2.5 — a
+ * is unavailable. See the "Test-suite gotcha" under SKILL.md's "Verify the
+ * layout locally BEFORE pushing" — a
  * graceful-degradation guard produces green tests over a broken repo, which is
  * exactly the failure mode this gate exists to prevent.
  */
@@ -110,6 +111,24 @@ describe("Skill description cap", () => {
     );
   });
 
+  it("no description is corrupted by a folded-scalar line wrap", () => {
+    // `description: |` joins its lines with a SPACE, and textwrap.wrap() breaks on
+    // hyphens by default — so a machine re-wrap turns `awesome-list` into
+    // `awesome- list` in the injected text. The char count is unchanged, so the cap
+    // assertions above cannot see it. Re-wrap with break_on_hyphens=False.
+    const corrupt = gate.data.skills.filter((s) => s.wrap_corruption.length > 0);
+    const detail = corrupt
+      .map((s) => `${s.name}: ${s.wrap_corruption.join(", ")}`)
+      .join("\n  ");
+    assert.equal(
+      corrupt.length,
+      0,
+      corrupt.length
+        ? `Hyphenated tokens split across folded-scalar lines:\n  ${detail}`
+        : ""
+    );
+  });
+
   it("the whole listing fits the shared listing budget", () => {
     assert.ok(
       gate.data.within_budget,
@@ -159,6 +178,43 @@ describe("Description Cap Gate wiring", () => {
     );
   });
 
+  it("the vendored gate is current with upstream, not a stale fork", () => {
+    const src = readFileSync(GATE, "utf-8");
+    // A vendored copy silently rots. These three are the upstream features this
+    // repo's workflow depends on; their absence means the copy predates them.
+    assert.match(
+      src,
+      /def find_wrap_corruption\(/,
+      "stale fork: upstream detects hyphenated tokens split across folded-scalar lines"
+    );
+    assert.match(
+      src,
+      /def compare_descriptions\(/,
+      "stale fork: upstream provides --compare, the trigger-surface diff"
+    );
+    assert.match(
+      src,
+      /MAX_DESC_CHARS - 1\)/,
+      "stale fork: the dead tail is desc - (cap-1); `desc - cap` undercounts by one"
+    );
+  });
+
+  it("the coverage harness ships next to the gate, so quoted numbers are re-runnable", () => {
+    // A coverage figure in a PR body that a reviewer cannot reproduce is not evidence.
+    const scorerRel = `${PLUGIN_SOURCE}/scripts/score_trigger_coverage.py`;
+    const scorer = resolve(ROOT, scorerRel);
+    assert.ok(
+      existsSync(scorer),
+      `${scorerRel} must ship with the plugin — the Description Cap Gate step tells ` +
+        `the agent to run it, so it has to be inside the marketplace source path`
+    );
+    assert.match(
+      readFileSync(scorer, "utf-8"),
+      /Adapted from wan-huiyan\/agent-review-panel/,
+      "vendored scorer must keep its upstream provenance note"
+    );
+  });
+
   it("SKILL.md resolves the gate through CLAUDE_PLUGIN_ROOT, not repo-root scripts/", () => {
     assert.match(
       skill,
@@ -180,9 +236,18 @@ describe("Description Cap Gate wiring", () => {
     );
   });
 
-  it("the gate stage is named, not decimal-numbered", () => {
+  it("no stage anywhere in the file is decimal-numbered", () => {
     // SKILL.md's own "Phase Numbering" guidance forbids decimal sub-phases (1.5, 3.5).
-    assert.doesNotMatch(skill, /Step 1\.5/, "the gate stage must not be numbered 1.5");
+    // Scoped to the whole file, not just the gate stage: a skill that tells other
+    // authors to avoid decimal sub-phases has to hold itself to it. Letter suffixes
+    // (Step 5b, Step 8a) are the sanctioned form and are unaffected.
+    const decimals = skill.match(/Step \d+\.\d+/g) ?? [];
+    assert.deepEqual(
+      decimals,
+      [],
+      `decimal sub-phases contradict this file's own Phase Numbering rule: ` +
+        `${[...new Set(decimals)].join(", ")}`
+    );
     assert.match(
       skill,
       /^## Description Cap Gate \(REQUIRED\)$/m,
