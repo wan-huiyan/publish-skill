@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 2.4.0
+version: 2.4.1
 description: |
   Publish a Claude Code skill to GitHub as a polished open-source repo, AND diagnose `claude plugin
   install` failures on a published skill. Use when the user says "publish this skill", "put this on
@@ -168,6 +168,28 @@ If it fails:
    trigger that gained a precondition — the word set is identical. Run
    `python3 "$GATE" --compare main:<path/SKILL.md> <path/SKILL.md>` and read every
    `DROPPED` / `NARROWED` / `REWORDED` row by hand. Do not clear them with a metric.
+
+   **`--compare` only sees double-quoted spans.** `extract_triggers()` matches `"..."`
+   and `“...”` and nothing else, so **backticked literals are invisible to it** — error
+   strings, flags, file paths. An empty `DROPPED` table is not proof that no trigger was
+   lost. This repo's own 2,385 → 1,503 trim silently removed three of them
+   (`Plugin X not found in any configured marketplace`, the `Failed to add marketplace:`
+   prefix, and `.claude-plugin/marketplace.json`) and `--compare` reported 0 dropped.
+   Diff the backticked spans by hand as well. Scope it to the **description**, not the
+   whole file — the body usually still carries every literal, so a whole-file diff
+   reports nothing and reads as a clean bill of health:
+   ```bash
+   desclit() { python3 -c '
+   import re,sys
+   t=open(sys.argv[1]).read() if len(sys.argv)>1 else sys.stdin.read()
+   fm=re.match(r"^---\n([\s\S]*?)\n---",t).group(1)
+   d=re.search(r"(?m)^description:\s*[|>]-?\s*\n((?:[ \t]+.*\n?)*)",fm).group(1)
+   d=" ".join(l.strip() for l in d.split("\n") if l.strip())
+   print("\n".join(sorted(set(re.findall(r"`([^`\n]{3,90})`",d)))))
+   ' "$@"; }
+
+   diff <(git show main:<path/SKILL.md> | desclit) <(desclit <path/SKILL.md>)
+   ```
 7. **Leave 30–50 chars of headroom.** Landing at cap−2 is one edit away from breaking.
 
 **Under the cap is NOT the same as visible.** The per-skill cap is only the first
