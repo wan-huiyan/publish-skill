@@ -1,6 +1,6 @@
 {
   "skill": "publish-skill",
-  "version": "1.6.0",
+  "version": "2.4.0",
   "triggers": [
     {"prompt": "publish this skill to GitHub", "should_trigger": true},
     {"prompt": "put this skill on GitHub as a public repo", "should_trigger": true},
@@ -27,6 +27,12 @@
     {"prompt": "republish", "should_trigger": true},
     {"prompt": "share my .claude skill with my team", "should_trigger": true},
     {"prompt": "publish this skill and then improve its triggers afterwards", "should_trigger": true},
+
+    {"prompt": "my plugin install is failing", "should_trigger": true},
+    {"prompt": "claude plugin marketplace add is silently failing", "should_trigger": true},
+    {"prompt": "plugin not found in marketplace when I install my own skill", "should_trigger": true},
+    {"prompt": "wrong plugin source field in marketplace.json", "should_trigger": true},
+    {"prompt": "Invalid schema: plugins.0.source: Invalid input when adding my marketplace", "should_trigger": true},
 
     {"prompt": "create a new skill from scratch for linting", "should_trigger": false},
     {"prompt": "check this code for memory leaks", "should_trigger": false},

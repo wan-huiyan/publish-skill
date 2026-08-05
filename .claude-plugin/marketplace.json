@@ -10,7 +10,7 @@
       "name": "publish-skill",
       "source": "./plugins/publish-skill",
       "description": "Publish Claude Code skills to GitHub and awesome-claude-skills lists with hard-won lessons encoded",
-      "version": "2.3.0"
+      "version": "2.4.0"
     }
   ]
 }
