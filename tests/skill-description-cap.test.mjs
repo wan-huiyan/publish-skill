@@ -193,7 +193,7 @@ describe("Description Cap Gate wiring", () => {
     //             stays a deliberate act; this only guarantees that what is here is what
     //             was vendored, and forces the pin to be updated when it changes.
     const UPSTREAM_SHA256 =
-      "f210ccd2feb4a3f76289e078bdc5621919ca657026f3d86cc5d7cb1201985fb0";
+      "f72dcfabcca18c6936153c6d5c117f0f982ae649ea468b11a52d2b57e99d079c";
     const OPEN =
       "--8<-- vendoring note (local addition; stripped before the parity hash) --8<--\n";
     const CLOSE = "--8<-- end vendoring note --8<--\n\n";
@@ -211,7 +211,7 @@ describe("Description Cap Gate wiring", () => {
       digest,
       UPSTREAM_SHA256,
       "the vendored gate no longer matches its pinned upstream revision " +
-        "(context-police@eedad0f, version 2.2.1). Do not patch it here: fix it upstream, " +
+        "(context-police@c413fd4, version 2.3.0). Do not patch it here: fix it upstream, " +
         "re-vendor, and update UPSTREAM_SHA256 plus the commit reference in the vendoring note."
     );
   });

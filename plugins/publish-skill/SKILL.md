@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 2.4.1
+version: 2.4.2
 description: |
   Publish a Claude Code skill to GitHub as a polished open-source repo, AND diagnose `claude plugin
   install` failures on a published skill. Use when the user says "publish this skill", "put this on

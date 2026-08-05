@@ -1,6 +1,6 @@
 {
   "skill": "publish-skill",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "triggers": [
     {"prompt": "publish this skill to GitHub", "should_trigger": true},
     {"prompt": "put this skill on GitHub as a public repo", "should_trigger": true},
