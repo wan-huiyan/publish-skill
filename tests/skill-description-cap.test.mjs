@@ -28,6 +28,7 @@ import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -178,24 +179,40 @@ describe("Description Cap Gate wiring", () => {
     );
   });
 
-  it("the vendored gate is current with upstream, not a stale fork", () => {
-    const src = readFileSync(GATE, "utf-8");
-    // A vendored copy silently rots. These three are the upstream features this
-    // repo's workflow depends on; their absence means the copy predates them.
-    assert.match(
-      src,
-      /def find_wrap_corruption\(/,
-      "stale fork: upstream detects hyphenated tokens split across folded-scalar lines"
-    );
-    assert.match(
-      src,
-      /def compare_descriptions\(/,
-      "stale fork: upstream provides --compare, the trigger-surface diff"
-    );
-    assert.match(
-      src,
-      /MAX_DESC_CHARS - 1\)/,
-      "stale fork: the dead tail is desc - (cap-1); `desc - cap` undercounts by one"
+  it("the vendored gate matches the upstream revision it was vendored from, byte for byte", () => {
+    // WHY A DIGEST AND NOT A FEW GREPS. This assertion used to check that the file
+    // contained `find_wrap_corruption(`, `compare_descriptions(` and `MAX_DESC_CHARS - 1)`,
+    // and was named "current with upstream, not a stale fork". It was a false negative:
+    // the copy vendored at context-police v2.2.0 carried all three substrings AND a
+    // find_wrap_corruption() that reported a bogus BROKEN BY LINE-WRAP on every skill
+    // written `description: >-`. The test stayed green through the whole drift.
+    //
+    // WHAT THIS CAN AND CANNOT SEE:
+    //   CAN    -- any local edit to the vendored file, and any drift from the pinned revision.
+    //   CANNOT -- upstream moving on. CI has no access to the upstream repo. Re-vendoring
+    //             stays a deliberate act; this only guarantees that what is here is what
+    //             was vendored, and forces the pin to be updated when it changes.
+    const UPSTREAM_SHA256 =
+      "f210ccd2feb4a3f76289e078bdc5621919ca657026f3d86cc5d7cb1201985fb0";
+    const OPEN =
+      "--8<-- vendoring note (local addition; stripped before the parity hash) --8<--\n";
+    const CLOSE = "--8<-- end vendoring note --8<--\n\n";
+
+    const local = readFileSync(GATE, "utf-8");
+    const start = local.indexOf(OPEN);
+    assert.notEqual(start, -1, "vendoring note opening marker is missing from the gate");
+    const end = local.indexOf(CLOSE, start);
+    assert.notEqual(end, -1, "vendoring note closing marker is missing from the gate");
+
+    const stripped = local.slice(0, start) + local.slice(end + CLOSE.length);
+    const digest = createHash("sha256").update(stripped, "utf8").digest("hex");
+
+    assert.equal(
+      digest,
+      UPSTREAM_SHA256,
+      "the vendored gate no longer matches its pinned upstream revision " +
+        "(context-police@eedad0f, version 2.2.1). Do not patch it here: fix it upstream, " +
+        "re-vendor, and update UPSTREAM_SHA256 plus the commit reference in the vendoring note."
     );
   });
 

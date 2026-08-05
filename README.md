@@ -65,7 +65,7 @@ These rules were learned from real incidents during publishing:
 | A long description is not a rich description | This repo's own description hit 2,385 chars against a 1,536-char skill-listing cap. The harness keeps `full[:1535]`, so **850** chars — the whole `Covers:` list and the entire `Do NOT use for` precision list — were written on every turn and thrown away unread. v2.1.0's commit message said "extend triggers"; every char it added past 1535 delivered nothing. Gate the description in CI |
 | Count the dead tail as `desc − (cap − 1)` | The obvious `desc − cap` is off by one: the harness keeps `full[:cap-1]` and appends an ellipsis, so char 1535 dies too. This repo shipped "849" in its own PR body and README for a full round before re-vendoring the gate surfaced "+850". An off-by-one in a number you publish is still a wrong number |
 | Re-wrapping a description can corrupt it without changing its length | `description: >` and `description: \|` join lines with a SPACE, and `textwrap.wrap()` breaks on hyphens **by default** — so a machine re-wrap turns `awesome-list` into `awesome- list` in the text the model actually reads. No length check can see it. Wrap with `break_on_hyphens=False` and assert on the gate's `BROKEN BY LINE-WRAP` section |
-| An eval corpus that misses half the description hides real regressions | The 25-prompt suite had zero prompts for the plugin-install-failure surface — half of what the description triggers on. Adding 5 adversarial ones (drawn from phrases the trim *removed*) immediately exposed two coverage regressions that the original corpus scored as clean. Add the prompts that can make your own change look bad |
+| An eval corpus that misses half the description hides real regressions | The 45-prompt suite (25 positives / 20 negatives) had zero prompts for the plugin-install-failure surface — half of what the description triggers on. Adding 5 adversarial positives (drawn from phrases the trim *removed*) took it to 50 and immediately exposed two coverage regressions that the original corpus scored as clean. Add the prompts that can make your own change look bad |
 | Update SKILL.md FIRST, metadata second | Updated eval-suite, README, plugin.json, and marketplace.json to v1.5 — but forgot to add a version field to SKILL.md itself. The skill content is the primary artifact; metadata files follow it, not the other way around |
 
 ## Example: What the Skill Produces
@@ -202,7 +202,7 @@ The skill includes a comprehensive evaluation suite (`eval-suite.json`) with **5
 eval-suite integrity, trigger classification, and the **skill-description cap
 gate**. The gate (`plugins/publish-skill/scripts/check_skill_descriptions.py`,
 vendored from [context-police](https://github.com/wan-huiyan/context-police)
-v2.2.0) also runs as its own CI step so it can never silently skip.
+v2.2.1) also runs as its own CI step so it can never silently skip.
 
 **What fails the build, and where.** The two are not the same, and the earlier
 version of this paragraph conflated them:
@@ -222,9 +222,15 @@ It lives **inside the plugin source dir**, not at repo-root `scripts/`, because
 skill's REQUIRED Description Cap Gate step resolves it as
 `$CLAUDE_PLUGIN_ROOT/scripts/check_skill_descriptions.py`, so it is runnable for
 installed users and not just for people who cloned the repo. A test asserts that
-invariant against `marketplace.json`, and another asserts the vendored copy is not
-a stale fork (it must carry upstream's `find_wrap_corruption`, `--compare`, and the
-`cap − 1` dead-tail arithmetic).
+invariant against `marketplace.json`, and another pins the vendored copy to
+upstream's sha256 (`context-police@eedad0f`, v2.2.1): the vendoring note is stripped
+and the remainder hashed, so any local edit or drift from the pinned revision turns
+CI red. It **cannot** see upstream moving on — CI has no access to the upstream repo,
+so re-vendoring stays a deliberate act. That assertion used to be three substring
+greps named "not a stale fork", and it was a false negative: the copy vendored at
+v2.2.0 carried all three substrings *and* a `find_wrap_corruption()` that reported a
+bogus `BROKEN BY LINE-WRAP` on every `description: >-` skill. It stayed green through
+the entire drift.
 
 `score_trigger_coverage.py` ships beside it for the same reason: every coverage
 figure quoted in a PR here has to be re-runnable by the reviewer.
@@ -263,6 +269,7 @@ Extracted via Claudeception from a multi-session publishing workflow that includ
 
 | Version | Date | Changes |
 |---|---|---|
+| 2.4.1 | 2026-08-05 | Accuracy pass over 2.4.0. Re-vendor the gate from `context-police@eedad0f` (version **2.2.1**), whose `find_wrap_corruption()` no longer reports a bogus `BROKEN BY LINE-WRAP` on skills written `description: >-`. Replace the "not a stale fork" assertion — three substring greps — with a **pinned upstream sha256**: the old form was a demonstrated false negative, since the v2.2.0 copy carried all three substrings *and* the bug, and stayed green through the whole drift. Document that `--compare` **only sees double-quoted spans**, so backticked literals are invisible to it (this repo's own trim silently dropped three, with `--compare` reporting 0 dropped) and add a description-scoped hand-diff recipe. Fix the Hard-Won Lessons row that called the eval corpus "the 25-prompt suite" when it was 45 prompts (25 positives), contradicting two other surfaces in the same README. Note: `2.2.0`/`2.2.1` are context-police plugin versions, **not** git tags — upstream's newest tag is `v2.0.0` |
 | 2.4.0 | 2026-08-04 | Trim the frontmatter description from 2,385 → 1,503 chars (the harness kept `full[:1535]`, so **850** chars were written every turn and discarded); restore the `Do NOT use for` precision list to the visible region; add the REQUIRED **Description Cap Gate** stage + the vendored gate at `plugins/publish-skill/scripts/check_skill_descriptions.py` (context-police v2.2.0, inside the shipped plugin source dir, resolved via `$CLAUDE_PLUGIN_ROOT`), wired into tests and CI, propagated to generated repos by Step 5c, and declared as a `python3` dependency. Also ships `score_trigger_coverage.py` so quoted coverage figures are reproducible, expands the trigger corpus 45 → 50 with the plugin-install-failure surface, and renames `Step 2.5` to a named stage so the file no longer breaks its own decimal-sub-phase rule |
 | 2.3.0 | 2026-07-17 | Add "Renaming a Published Skill" variant (repo rename → identifier sweep → major bump → dual-separator cross-ref grep) + Pattern-B manifest-test gotcha note |
 | 2.2.0 | 2026-06-01 | Sync accumulated local SKILL.md updates |
