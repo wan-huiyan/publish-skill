@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 2.4.2
+version: 2.5.0
 description: |
   Publish a Claude Code skill to GitHub as a polished open-source repo, AND diagnose `claude plugin
   install` failures on a published skill. Use when the user says "publish this skill", "put this on
@@ -671,9 +671,11 @@ issues before they reach users. Tests run on every push via GitHub Actions.
 - `tests/eval-suite-integrity.test.mjs` — validates structure, regex compilation, ID uniqueness, trigger balance
 - `tests/trigger-classification.test.mjs` — validates trigger entries and skill name references
 - `tests/skill-description-cap.test.mjs` — runs the description-cap gate over the repo (cap, lost triggers, line-wrap corruption, shared listing budget, ≥20 chars headroom) and asserts the vendored gate is not a stale fork
+- `tests/docs-executable.test.mjs` — parses every fenced code block in the shipped SKILL.md and references, so the repo cannot publish code that does not even parse (see "Published code is a claim" below)
 - `plugins/<name>/scripts/check_skill_descriptions.py` — the gate itself, vendored **inside the plugin source dir** so installed users get it too (see below)
 - `plugins/<name>/scripts/score_trigger_coverage.py` — the coverage harness, so any coverage figure the PR quotes can be re-run by a reviewer
 - `.github/workflows/test.yml` — CI pipeline (Node.js 20+22 matrix **plus a Python step for the gate**)
+- `.github/workflows/release.yml` + a repo-root `VERSION` file — cuts `v<VERSION>` on merge whenever `VERSION` changes, so the release cannot fall behind the manifest (see "Releases drift because they are hand-cut" below)
 - `package.json` (if not present) — minimal, with `"test": "node --test tests/*.test.mjs"`
 
 **Where the sources come from.** There is no single templates directory that holds all
@@ -732,6 +734,95 @@ independently:
 
 `skill-description-cap.test.mjs` must **fail, not skip**, when `python3` is missing — same
 assertive-check rule as below.
+
+### Releases drift because they are hand-cut
+
+The README's dynamic version badge reads **GitHub Releases**, not `plugin.json`.
+Cutting the release is a separate manual act from bumping the version, so it is
+the step that gets skipped — and then the badge confidently advertises a version
+from two bumps ago while every file in the repo is correct. No manifest test can
+see it, because the release does not live in a tracked file.
+
+Measured across this org on 2026-08-06: `claude-statusline` shipped `plugin.json`
+1.2.0 against a newest release of v1.0.0, and **this very repo** sat at 2.4.2
+against v2.3.0. Both badges were green and both were wrong.
+
+Generate the automation rather than relying on the habit — see the
+`claude-plugin-repo-ci-release` skill, which ships `release.yml`, a structure
+validator, and the `VERSION` convention. Two properties matter:
+
+- The validator asserts `VERSION` equals `plugin.json`'s version, so the extra
+  file is a checked invariant rather than one more place to drift.
+- Cutting a release that already exists is a clean no-op, so adding the file to
+  a repo whose release is current does nothing.
+
+Also assert the README's own version history, which drifts for the same reason —
+it is a manual edit with nothing checking it. In `manifest-consistency.test.mjs`:
+
+```js
+// The README version history must list the version currently shipping.
+const readme = readFileSync(resolve(ROOT, "README.md"), "utf8");
+assert.ok(readme.includes(pluginJson.version),
+  `README version history is missing ${pluginJson.version}`);
+```
+
+Both skill-sync's and claude-statusline's histories had missing entries when
+checked; claude-statusline's skipped a whole release, and skill-sync's also gave
+the initial release the wrong number.
+
+### Published code is a claim — make it executable
+
+A skill's code blocks are the part users copy. Nothing in the generated suite
+checks them, so a snippet can ship broken indefinitely: it is prose to every
+test in the repo.
+
+**Minimum — every fenced block must parse.** Cheap, no execution, catches the
+worst class outright. Generate `tests/docs-executable.test.mjs`:
+
+```js
+// Every ```bash block in the shipped docs must parse. Uses bash -n (parse
+// only, runs nothing), so it is safe on blocks with side effects.
+import { execFileSync } from "node:child_process";
+for (const [file, body] of docs) {
+  for (const [i, block] of [...body.matchAll(/```bash\n([\s\S]*?)```/g)].entries()) {
+    assert.doesNotThrow(
+      () => execFileSync("bash", ["-n"], { input: block[1] }),
+      `${file} bash block #${i} does not parse`);
+  }
+}
+```
+
+Use `bash -n`, not `sh -n`: macOS `/bin/bash` is 3.2, and a block using `[[ =~ ]]`,
+`shopt -s nocasematch` or `${x//a/b}` must be checked against the shell it claims
+to target. Do the same for `json` blocks with `JSON.parse` and `python` blocks
+with `compile()`.
+
+**Expect deliberate fragments, and mark them rather than weakening the check.**
+Docs legitimately show partial snippets — a `json` block with a `// comment`
+naming the file it belongs in, an object with a `...` elision. A checker that
+fails on those gets muted, and a muted checker protects nothing. Tag the fence
+`jsonc`, or `json title="fragment"`, and skip only what is explicitly tagged —
+never skip on "it failed to parse, so it was probably a fragment", which is the
+same green-because-it-cannot-fail trap. This repo has exactly one such block
+(the `settings.json` PostToolUse example under "Bundling Hooks with Skills").
+
+**Better — if the doc publishes a table of inputs and outputs, run it.** A
+truth table is the most confident thing in a skill and nothing checks it.
+2026-08-06: publishing a `same_ref` helper with a worked table, then executing
+that table against the documented helper, immediately found a real bug —
+`${a#worktree-}` is case-sensitive and `shopt -s nocasematch` does not reach
+parameter expansion, so an uppercase prefix was never stripped despite the doc
+claiming case was normalised. Nine rows, one command, one genuine defect that
+review had not caught:
+
+```bash
+# Extract the documented helper and drive it with the documented table.
+sed -n '/^same_ref() {/,/^}/p' SKILL.md > /tmp/fn.sh   # or parse the fence
+{ cat /tmp/fn.sh; cat cases.sh; } | bash
+```
+
+If a table is too awkward to execute, that is a signal the example is
+underspecified — not a reason to skip it.
 
 **Or, if `~/Documents/skill-test-templates/backfill.sh` exists on this machine:**
 `~/Documents/skill-test-templates/backfill.sh /path/to/repo` (it predates the
@@ -1029,6 +1120,52 @@ Order matters: repo first, then contents, then local, then references.
    "`<new>` (formerly <old>)" where version-pinned references matter; leave archives/`*.bak`
    untouched; NEVER rewrite verbatim human quotes that contain the old name — annotate after the
    quote instead ("(that tool is now named <new>)").
+
+## Guards: If You Cannot Say How It Goes Red, It Did Not Pass
+
+This skill states this three times in three specific places — the
+graceful-degradation test guard that skips instead of failing, the empty
+`DROPPED` table that cannot see backticked triggers, the vendored gate that a
+substring grep cannot tell from a stale fork. They are all one rule, and it is
+worth naming once:
+
+**A check that cannot fail is indistinguishable from a check that passed.**
+Green means "found no problems" and "was structurally incapable of finding
+problems" equally well, and the second is far more common than it feels.
+
+Before you let a guard's green stand as evidence, **break it on purpose**:
+
+```bash
+# Negative control: feed the guard a known-bad input and require a red.
+printf '%s\n' "$KNOWN_BAD" | grep -qF "$PATTERN" \
+  && echo "control OK — the guard can fire" \
+  || { echo "GUARD BROKEN — its green means nothing"; exit 1; }
+```
+
+Three recurring shapes, all seen in this repo's own history:
+
+| Shape | Reads as | Actually |
+|---|---|---|
+| Pattern never matches (bad quoting, unescaped `.`/`$`/`{`) | "no hits — clean" | never inspected anything |
+| Guard skips on a missing prerequisite (`if existsSync(...)`, absent `python3`) | "suite passed" | assertions never ran |
+| Guard checks presence, not identity (feature-name grep on a vendored copy) | "not a stale fork" | any in-function drift invisible |
+
+Practical rules:
+
+- **`grep -F` for literal needles.** Version strings, `${VAR}` snippets, error
+  messages and file paths are full of regex metacharacters. 2026-08-06: a sweep
+  of four copies of a file for a known-bad line reported all four clean — the
+  pattern held `$` and `{`, matched nothing anywhere, and two were stale.
+- **Assert, never skip.** A missing prerequisite is a red, not a pass. This is
+  the same rule as the assertive-check rule under Step 5c, and the reason
+  `skill-description-cap.test.mjs` must fail rather than skip without `python3`.
+- **Name the guard for what it proves,** then check the name against the
+  assertion. "Is current with upstream" and "matches the revision it was
+  vendored from" are different claims; only one is testable offline.
+- **Say what the sweep excluded.** "0 remaining" reads as coverage. If the
+  check skipped archives, superseded version directories, or untracked copies,
+  state that beside the result — and say which copy is the one that actually
+  loads.
 
 ## Phase Numbering in SKILL.md Workflows
 
