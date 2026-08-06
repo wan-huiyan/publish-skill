@@ -1,6 +1,6 @@
 ---
 name: publish-skill
-version: 2.5.0
+version: 2.6.0
 description: |
   Publish a Claude Code skill to GitHub as a polished open-source repo, AND diagnose `claude plugin
   install` failures on a published skill. Use when the user says "publish this skill", "put this on
@@ -121,13 +121,35 @@ Run the gate before packaging. **The gate ships inside this plugin** at
 `CLAUDE_PLUGIN_ROOT`, which Claude Code exports as the plugin's install directory:
 
 ```bash
-GATE="$CLAUDE_PLUGIN_ROOT/scripts/check_skill_descriptions.py"
-# Fallback for a bare ~/.claude/skills/ copy, where CLAUDE_PLUGIN_ROOT is unset:
-[ -f "$GATE" ] || GATE="$(find "$HOME/.claude" -name check_skill_descriptions.py -print -quit 2>/dev/null)"
+# Resolve THIS plugin's own copy, across all three install roots in order.
+# CLAUDE_PLUGIN_ROOT is frequently unset in the shell a step actually runs in, and a
+# plugin install never creates ~/.claude/skills/publish-skill/ — the plugin lives at
+# ~/.claude/plugins/cache/<marketplace>/publish-skill/<version>/.
+REL="scripts/check_skill_descriptions.py"
+GATE="${CLAUDE_PLUGIN_ROOT:+${CLAUDE_PLUGIN_ROOT}/$REL}"
+[ -f "$GATE" ] || GATE="$HOME/.claude/skills/publish-skill/$REL"
+# Scope the search to publish-skill and rank on the VERSION segment. A bare
+# `find "$HOME/.claude" -name check_skill_descriptions.py -print -quit` matches the FIRST
+# copy in traversal order, and this gate is vendored into several other plugins — on one
+# machine that resolved to agent-review-panel/roundtable's copy, i.e. a different plugin's
+# fork, with 19 copies present at 8 distinct hashes. A gate that silently runs someone
+# else's version can pass a description this one would fail.
+[ -f "$GATE" ] || GATE="$(find -L "$HOME/.claude/plugins/cache" -mindepth 5 -maxdepth 5 \
+    -path "*/publish-skill/*/$REL" 2>/dev/null \
+  | awk -F/ '{print $(NF-2)"\t"$0}' | sort -V -k1,1 | tail -1 | cut -f2-)"
 
-python3 "$GATE" . --no-color --triggers   # `.` = the skill repo being published
-# exit 0 = clean · 1 = over cap OR line-wrap corruption · 2 = bad path
+if [ ! -f "$GATE" ]; then
+  echo "check_skill_descriptions.py: not found — tried \$CLAUDE_PLUGIN_ROOT/$REL," \
+       "\$HOME/.claude/skills/publish-skill/$REL, and" \
+       "\$HOME/.claude/plugins/cache/*/publish-skill/*/$REL"
+else
+  python3 "$GATE" . --no-color --triggers   # `.` = the skill repo being published
+  # exit 0 = clean · 1 = over cap OR line-wrap corruption · 2 = bad path
+fi
 ```
+
+Say **"not found — tried \<paths\>"**, never a bare "not installed": a failed lookup is
+not evidence about install state.
 
 **`BROKEN BY LINE-WRAP` is a separate failure from `OVER CAP`, and the char count
 cannot see it.** `description: >` and `description: |` join their lines with a
